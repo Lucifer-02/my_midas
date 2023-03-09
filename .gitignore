@@ -1,2 +1,5 @@
 data/
 temp/
+.gitignore
+main
+

@@ -54,19 +54,26 @@ int main(int argc, char const *argv[]) {
   read_labels(argv[3], labels, N);
 
   // Init
-  Config const config = {.depth = 1, .width = 1024};
-  NormalCore *const midas = midasInit(config);
+  /** Config const config = {.depth = 1, .width = pow(2, 22)}; */
 
-  // get input and compute score
-  for (int i = 0; i < N; i++) {
+  int widths[] = {131072,        262144,        524288,
+                  524288 + 1000, 524288 + 2000, 524288 + 3000};
+  int num_width = sizeof(widths) / sizeof(widths[0]);
 
-    Input const input = {.src = src[i], .dst = dst[i], .ts = ts[i]};
-    scores[i] = normalOperator(midas, input);
+  for (int i = 0; i < num_width; i++) {
+
+    NormalCore *midas = midasInit(2, widths[i]);
+
+    for (int j = 0; j < N; j++) {
+
+      Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]};
+      scores[j] = normalOperator(midas, input);
+    }
+
+    // compute AUROC
+    double const auroc = AUROC(labels, scores, N);
+    printf("AUROC: %lf\n", auroc);
   };
-
-  // compute AUROC
-  double const auroc = AUROC(labels, scores, N);
-  printf("AUROC: %lf\n", auroc);
 
   /** FILE *const fscore = fopen("./temp/Score.txt", "w"); */
   /** for (int i = 0; i < N; i++) { */

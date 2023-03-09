@@ -1,7 +1,7 @@
 #include "auroc.h"
 
 // implement qsort using elements in yPred to compare
-void my_qsort(size_t *base, size_t size, const double *yPred) {
+static void my_qsort(size_t *base, size_t size, const double *yPred) {
   if (size <= 1)
     return;
 

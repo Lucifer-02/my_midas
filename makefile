@@ -1,6 +1,6 @@
 CC=gcc
 SRCDIR=src
-COMPFLAGS= -g -lm -Wall -Wpedantic -Winline -Wno-long-long 
+COMPFLAGS= -lm -Wall -Wpedantic -Winline -Wno-long-long 
 INPUT_DIR=data
 SCORE=temp/Score.txt
 LIB=src/count_min_sketch.c  src/auroc.c src/normalCore.c

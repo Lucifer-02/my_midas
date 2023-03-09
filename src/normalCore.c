@@ -1,14 +1,19 @@
 #include "normalCore.h"
+#include <stdio.h>
 
-double ComputeScore(double a, double s, double t) {
+static double ComputeScore(double a, double s, double t) {
   return s == 0 || t - 1 == 0 ? 0 : pow((a - s / t) * t, 2) / (s * (t - 1));
 }
 
-NormalCore *midasInit(Config config) {
+NormalCore *midasInit(int depth, int width) {
   NormalCore *midas = malloc(sizeof(NormalCore));
-  cms_init(&(midas->current), config.width, config.depth);
-  cms_init(&(midas->total), config.width, config.depth);
+  cms_init(&(midas->current), width, depth);
+  cms_init(&(midas->total), width, depth);
   midas->current_ts = 0;
+
+  // print error rate and confidence
+  printf("Depth: %d, Width: %d, Error rate: %f, Confidence: %f\n", depth, width,
+         midas->current.error_rate, midas->current.confidence);
 
   return midas;
 }

@@ -5,9 +5,6 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-// implement qsort using elements in yPred to compare
-void my_qsort(size_t *base, size_t size, const double *yPred);
-
 /// @tparam T Type of array elements, should be a floating number type
 /// @param yTrue Array of ground truth labels, 0.0 is negative, 1.0 is positive
 /// @param yPred Array of predicted scores, can be of any range

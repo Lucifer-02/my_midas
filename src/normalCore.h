@@ -13,8 +13,7 @@ typedef struct {
   int current_ts;
 } NormalCore;
 
-double ComputeScore(double a, double s, double t) ;
-NormalCore *midasInit(Config config) ;
+NormalCore *midasInit(int depth, int width) ;
 double normalOperator(NormalCore *midas, Input input) ;
 
 #endif
