@@ -1,35 +1,9 @@
 #include "src/auroc.h"
-#include "src/config.h"
 #include "src/count_min_sketch.h"
-#include "src/normalCore.h"
+#include "src/midas.h"
+#include "src/midasR.h"
+#include "src/prepare.h"
 
-void read_labels(char const *filename, double *labels, int len) {
-
-  FILE *f = fopen(filename, "r");
-  for (int i = 0; i < len; i++) {
-    fscanf(f, "%lf\n", labels + i);
-  }
-  fclose(f);
-}
-
-int get_shape(char const *filename) {
-  FILE *f = fopen(filename, "r");
-  int shape;
-  fscanf(f, "%d", &shape);
-  fclose(f);
-  return shape;
-}
-
-// read csv file and store in 3 arrays int
-void read_data(char const *filename, int *arr1, int *arr2, int *arr3, int len) {
-
-  FILE *f_data = fopen(filename, "r");
-
-  for (int i = 0; i < len; i++) {
-    fscanf(f_data, "%d,%d,%d\n", &arr1[i], &arr2[i], &arr3[i]);
-  }
-  fclose(f_data);
-}
 
 int main(int argc, char const *argv[]) {
 
@@ -56,18 +30,30 @@ int main(int argc, char const *argv[]) {
   // Init
   /** Config const config = {.depth = 1, .width = pow(2, 22)}; */
 
-  int widths[] = {131072,        262144,        524288,
-                  524288 + 1000, 524288 + 2000, 524288 + 3000};
+  int widths[] = {1024, 2048, 4096};
   int num_width = sizeof(widths) / sizeof(widths[0]);
 
   for (int i = 0; i < num_width; i++) {
 
-    NormalCore *midas = midasInit(2, widths[i]);
+    MidasR *midasR = midasRInit(2, widths[i], 0.5);
 
     for (int j = 0; j < N; j++) {
 
       Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]};
-      scores[j] = normalOperator(midas, input);
+      scores[j] = midasROperator(midasR, input);
+    }
+
+    // compute AUROC
+    double const aurocR = AUROC(labels, scores, N);
+    printf("AUROC: %lf\n", aurocR);
+
+    //---------------------------------------------
+    Midas *midas = midasInit(2, widths[i]);
+
+    for (int j = 0; j < N; j++) {
+
+      Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]};
+      scores[j] = midasOperator(midas, input);
     }
 
     // compute AUROC

@@ -1,9 +1,9 @@
 CC=gcc
 SRCDIR=src
-COMPFLAGS= -lm -Wall -Wpedantic -Winline -Wno-long-long 
+COMPFLAGS= -lm -Wall -Wextra -Wpedantic -Winline -Wno-long-long 
 INPUT_DIR=data
 SCORE=temp/Score.txt
-LIB=src/count_min_sketch.c  src/auroc.c src/normalCore.c
+LIB=src/count_min_sketch.c  src/auroc.c src/midas.c src/midasR.c src/prepare.c
 
 darpa: INPUT_DIR=data/DARPA/processed
 darpa: run 

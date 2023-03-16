@@ -1,24 +1,24 @@
-#include "normalCore.h"
+#include "midas.h"
 #include <stdio.h>
 
 static double ComputeScore(double a, double s, double t) {
   return s == 0 || t - 1 == 0 ? 0 : pow((a - s / t) * t, 2) / (s * (t - 1));
 }
 
-NormalCore *midasInit(int depth, int width) {
-  NormalCore *midas = malloc(sizeof(NormalCore));
+Midas *midasInit(int depth, int width) {
+  Midas *midas = malloc(sizeof(Midas));
   cms_init(&(midas->current), width, depth);
   cms_init(&(midas->total), width, depth);
   midas->current_ts = 0;
 
   // print error rate and confidence
-  printf("Depth: %d, Width: %d, Error rate: %f, Confidence: %f\n", depth, width,
+  printf("MIDAS: Depth: %d, Width: %d, Error rate: %f, Confidence: %f\n", depth, width,
          midas->current.error_rate, midas->current.confidence);
 
   return midas;
 }
 
-double normalOperator(NormalCore *midas, Input input) {
+double midasOperator(Midas *midas, Input input) {
   if (input.ts > midas->current_ts) {
     cms_clear(&(midas->current));
     midas->current_ts = input.ts;
