@@ -6,7 +6,7 @@ SCORE=temp/Score.txt
 LIB=src/count_min_sketch.c  src/auroc.c src/midas.c src/midasR.c src/prepare.c
 
 darpa: INPUT_DIR=data/DARPA/processed
-darpa: run check 
+darpa: run 
 
 cic2018: INPUT_DIR=data/CIC-IDS2018/processed
 cic2018: run 

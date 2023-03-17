@@ -4,7 +4,6 @@
 #include "src/midasR.h"
 #include "src/prepare.h"
 
-
 int main(int argc, char const *argv[]) {
 
   if (argc != 4) {
@@ -17,7 +16,8 @@ int main(int argc, char const *argv[]) {
 
   // get source, destination, and timestamp
   int *const src = malloc(N * sizeof(int));
-  int *const dst = malloc(N * sizeof(int)); int *const ts = malloc(N * sizeof(int));
+  int *const dst = malloc(N * sizeof(int));
+  int *const ts = malloc(N * sizeof(int));
 
   double *const labels = malloc(N * sizeof(double));
   double *const scores = malloc(N * sizeof(double));
@@ -26,15 +26,13 @@ int main(int argc, char const *argv[]) {
   // read truth labels
   read_labels(argv[3], labels, N);
 
-  // Init
-  /** Config const config = {.depth = 1, .width = pow(2, 22)}; */
-
   int widths[] = {1024};
+  int depth = 2;
   int num_width = sizeof(widths) / sizeof(widths[0]);
 
   for (int i = 0; i < num_width; i++) {
 
-    MidasR *midasR = midasRInit(2, widths[i], 0.5);
+    MidasR *midasR = midasRInit(depth, widths[i], 0.5);
 
     for (int j = 0; j < N; j++) {
 
@@ -46,8 +44,8 @@ int main(int argc, char const *argv[]) {
     double const aurocR = AUROC(labels, scores, N);
     printf("AUROC: %lf\n", aurocR);
 
-    /** //--------------------------------------------- */
-    /** Midas *midas = midasInit(2, widths[i]); */
+    //---------------------------------------------
+    /** Midas *midas = midasInit(depth, widths[i]); */
     /**  */
     /** for (int j = 0; j < N; j++) { */
     /**  */
@@ -60,13 +58,13 @@ int main(int argc, char const *argv[]) {
     /** printf("AUROC: %lf\n", auroc); */
   };
 
-  FILE *const fscore = fopen("./temp/Score.txt", "w");
-  for (int i = 0; i < N; i++) {
-
-	// write to file
-	fprintf(fscore, "%lf\n", scores[i]);
-  };
-  fclose(fscore);
+  /** FILE *const fscore = fopen("./temp/Score.txt", "w"); */
+  /** for (int i = 0; i < N; i++) { */
+  /**  */
+  /**   // write to file */
+  /**   fprintf(fscore, "%lf\n", scores[i]); */
+  /** }; */
+  /** fclose(fscore); */
 
   free(labels);
   free(scores);

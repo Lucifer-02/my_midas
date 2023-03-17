@@ -128,10 +128,10 @@ double cms_add_inc_alt(CountMinSketch *cms, uint64_t *hashes,
                         unsigned int num_hashes, double x);
 
 /* Add the provided key to the count-min sketch */
-static __inline__ double cms_add(CountMinSketch *cms, const char *key) {
-  return cms_add_inc(cms, key, 1);
+static __inline__ int32_t cms_add(CountMinSketch *cms, const char *key) {
+  return cms_add_inc(cms, key, 1.0);
 }
-static __inline__ double cms_add_alt(CountMinSketch *cms, uint64_t *hashes,
+static __inline__ int32_t cms_add_alt(CountMinSketch *cms, uint64_t *hashes,
                                       unsigned int num_hashes) {
   return cms_add_inc_alt(cms, hashes, num_hashes, 1.0);
 }
@@ -158,7 +158,7 @@ static __inline__ int32_t cms_remove_alt(CountMinSketch *cms, uint64_t *hashes,
 double cms_check(CountMinSketch *cms, const char *key);
 double cms_check_alt(CountMinSketch *cms, uint64_t *hashes,
                       unsigned int num_hashes);
-static __inline__ int32_t cms_check_min(CountMinSketch *cms, const char *key) {
+static __inline__ double cms_check_min(CountMinSketch *cms, const char *key) {
   return cms_check(cms, key);
 }
 static __inline__ int32_t cms_check_min_alt(CountMinSketch *cms,

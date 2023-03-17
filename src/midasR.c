@@ -1,4 +1,5 @@
 #include "midasR.h"
+#include "count_min_sketch.h"
 
 MidasR *midasRInit(int depth, int width, double factor) {
   MidasR *midasR = malloc(sizeof(MidasR));
@@ -9,7 +10,7 @@ MidasR *midasRInit(int depth, int width, double factor) {
   cms_init(&(midasR->numTotalSource), width, depth);
   cms_init(&(midasR->numCurrentDestination), width, depth);
   cms_init(&(midasR->numTotalDestination), width, depth);
-  midasR->current_ts = 0;
+  midasR->current_ts = 1;
 
   // print error rate and confidence
   printf("MIDAS-R: Depth: %d, Width: %d, Error rate: %f, Confidence: %f\n",
@@ -18,7 +19,6 @@ MidasR *midasRInit(int depth, int width, double factor) {
 
   return midasR;
 }
-
 static double ComputeScore(double a, double s, double t) {
   return s == 0 || t - 1 == 0 ? 0 : pow((a - s / t) * t, 2) / (s * (t - 1));
 }
@@ -38,19 +38,18 @@ static double max(double a, double b, double c) {
 double midasROperator(MidasR *midasR, Input input) {
   if (input.ts > midasR->current_ts) {
 
-    multipleAll(&(midasR->numCurrentEdge), midasR->factor,
-                midasR->numCurrentEdge.width, midasR->numCurrentEdge.depth);
-    multipleAll(&(midasR->numCurrentSource), midasR->factor,
-                midasR->numCurrentSource.width, midasR->numCurrentSource.depth);
-    multipleAll(&(midasR->numCurrentDestination), midasR->factor,
-                midasR->numCurrentDestination.width,
-                midasR->numCurrentDestination.depth);
+    int width = midasR->numCurrentEdge.width;
+    int depth = midasR->numCurrentEdge.depth;
+    double factor = midasR->factor;
+    multipleAll(&(midasR->numCurrentEdge), factor, width, depth);
+    multipleAll(&(midasR->numCurrentSource), factor, width, depth);
+    multipleAll(&(midasR->numCurrentDestination), factor, width, depth);
     midasR->current_ts = input.ts;
   }
 
   char hash_src[100], hash_dst[100], hash_edge[100];
 
-  sprintf(hash_edge, "%d", input.src + input.dst);
+  sprintf(hash_edge, "%d", input.src * 17 + input.dst * 13);
   cms_add(&(midasR->numCurrentEdge), hash_edge);
   cms_add(&(midasR->numTotalEdge), hash_edge);
 
@@ -61,6 +60,13 @@ double midasROperator(MidasR *midasR, Input input) {
   sprintf(hash_dst, "%d", input.dst);
   cms_add(&(midasR->numCurrentDestination), hash_dst);
   cms_add(&(midasR->numTotalDestination), hash_dst);
+
+  static int i = 1000;
+  if (i-- > 0) {
+    printf("Current: %lf, Total: %lf\n",
+           cms_check(&(midasR->numCurrentEdge), hash_edge),
+           cms_check(&(midasR->numTotalEdge), hash_edge));
+  }
 
   return max(
       ComputeScore(cms_check(&(midasR->numCurrentEdge), hash_edge),

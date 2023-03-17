@@ -21,6 +21,9 @@
 static int __setup_cms(CountMinSketch *cms, uint32_t width, uint32_t depth,
                        double error_rate, double confidence,
                        cms_hash_function hash_function);
+static void __write_to_file(CountMinSketch *cms, FILE *fp, short on_disk);
+static void __read_from_file(CountMinSketch *cms, FILE *fp, short on_disk,
+                             const char *filename);
 static void __merge_cms(CountMinSketch *base, int num_sketches, va_list *args);
 static int __validate_merge(CountMinSketch *base, int num_sketches,
                             va_list *args);
@@ -93,7 +96,7 @@ double cms_add_inc_alt(CountMinSketch *cms, uint64_t *hashes,
   double num_add = INT32_MAX;
   for (unsigned int i = 0; i < cms->depth; ++i) {
     uint64_t bin = (hashes[i] % cms->width) + (i * cms->width);
-    cms->bins[bin] += x;
+    cms->bins[bin] = cms->bins[bin] + x;
     /* currently a standard min strategy */
     if (cms->bins[bin] < num_add) {
       num_add = cms->bins[bin];
@@ -212,13 +215,38 @@ int32_t cms_check_mean_min(CountMinSketch *cms, const char *key) {
   uint64_t *hashes = cms_get_hashes(cms, key);
   int32_t num_add = cms_check_mean_min_alt(cms, hashes, cms->depth);
   free(hashes);
-  /** return num_add < 0 ? 0 : num_add; */
   return num_add;
 }
 
 uint64_t *cms_get_hashes_alt(CountMinSketch *cms, unsigned int num_hashes,
                              const char *key) {
   return cms->hash_function(num_hashes, key);
+}
+
+int cms_export(CountMinSketch *cms, const char *filepath) {
+  FILE *fp;
+  fp = fopen(filepath, "w+b");
+  if (fp == NULL) {
+    fprintf(stderr, "Can't open file %s!\n", filepath);
+    return CMS_ERROR;
+  }
+  __write_to_file(cms, fp, 0);
+  fclose(fp);
+  return CMS_SUCCESS;
+}
+
+int cms_import_alt(CountMinSketch *cms, const char *filepath,
+                   cms_hash_function hash_function) {
+  FILE *fp;
+  fp = fopen(filepath, "r+b");
+  if (fp == NULL) {
+    fprintf(stderr, "Can't open file %s!\n", filepath);
+    return CMS_ERROR;
+  }
+  __read_from_file(cms, fp, 0, NULL);
+  cms->hash_function = (hash_function == NULL) ? __default_hash : hash_function;
+  fclose(fp);
+  return CMS_SUCCESS;
 }
 
 int cms_merge(CountMinSketch *cms, int num_sketches, ...) {
@@ -298,6 +326,52 @@ static int __setup_cms(CountMinSketch *cms, unsigned int width,
     return CMS_ERROR;
   }
   return CMS_SUCCESS;
+}
+
+static void __write_to_file(CountMinSketch *cms, FILE *fp, short on_disk) {
+  unsigned long long length = cms->depth * cms->width;
+  if (on_disk == 0) {
+    for (unsigned long long i = 0; i < length; ++i) {
+      fwrite(&cms->bins[i], sizeof(int32_t), 1, fp);
+    }
+  } else {
+    // TODO: decide if this should be done directly on disk or not
+    // will need to write out everything by hand
+    // uint64_t i;
+    // int q = 0;
+    // for (i = 0; i < length; ++i) {
+    //     fwrite(&q, sizeof(int), 1, fp);
+    // }
+  }
+  fwrite(&cms->width, sizeof(int32_t), 1, fp);
+  fwrite(&cms->depth, sizeof(int32_t), 1, fp);
+  fwrite(&cms->elements_added, sizeof(int64_t), 1, fp);
+}
+
+static void __read_from_file(CountMinSketch *cms, FILE *fp, short on_disk,
+                             const char *filename) {
+  /* read in the values from the file before getting the sketch itself */
+  int offset = (sizeof(int32_t) * 2) + sizeof(long);
+  fseek(fp, offset * -1, SEEK_END);
+
+  fread(&cms->width, sizeof(int32_t), 1, fp);
+  fread(&cms->depth, sizeof(int32_t), 1, fp);
+  cms->confidence = 1 - (1 / pow(2, cms->depth));
+  cms->error_rate = 2 / (double)cms->width;
+  fread(&cms->elements_added, sizeof(int64_t), 1, fp);
+
+  rewind(fp);
+  size_t length = cms->width * cms->depth;
+  if (on_disk == 0) {
+    cms->bins = (double*)malloc(length * sizeof(double));
+    size_t read = fread(cms->bins, sizeof(int32_t), length, fp);
+    if (read != length) {
+      perror("__read_from_file: ");
+      exit(1);
+    }
+  } else {
+    // TODO: decide if this should be done directly on disk or not
+  }
 }
 
 static void __merge_cms(CountMinSketch *base, int num_sketches, va_list *args) {
