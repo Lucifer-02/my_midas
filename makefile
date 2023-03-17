@@ -1,12 +1,12 @@
 CC=gcc
 SRCDIR=src
-COMPFLAGS= -lm -Wall -Wextra -Wpedantic -Winline -Wno-long-long 
+COMPFLAGS= -O3 -lm -Wall -Wextra -Wpedantic -Winline -Wno-long-long 
 INPUT_DIR=data
 SCORE=temp/Score.txt
 LIB=src/count_min_sketch.c  src/auroc.c src/midas.c src/midasR.c src/prepare.c
 
 darpa: INPUT_DIR=data/DARPA/processed
-darpa: run 
+darpa: run check 
 
 cic2018: INPUT_DIR=data/CIC-IDS2018/processed
 cic2018: run 

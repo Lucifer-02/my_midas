@@ -83,17 +83,17 @@ int cms_clear(CountMinSketch *cms) {
   return CMS_SUCCESS;
 }
 
-int32_t cms_add_inc_alt(CountMinSketch *cms, uint64_t *hashes,
-                        unsigned int num_hashes, uint32_t x) {
+double cms_add_inc_alt(CountMinSketch *cms, uint64_t *hashes,
+                        unsigned int num_hashes, double x) {
   if (num_hashes < cms->depth) {
     fprintf(stderr, "Insufficient hashes to complete the addition of the "
                     "element to the count-min sketch!");
     return CMS_ERROR;
   }
-  int num_add = INT32_MAX;
+  double num_add = INT32_MAX;
   for (unsigned int i = 0; i < cms->depth; ++i) {
     uint64_t bin = (hashes[i] % cms->width) + (i * cms->width);
-    cms->bins[bin] = __safe_add(cms->bins[bin], x);
+    cms->bins[bin] += x;
     /* currently a standard min strategy */
     if (cms->bins[bin] < num_add) {
       num_add = cms->bins[bin];
@@ -103,9 +103,9 @@ int32_t cms_add_inc_alt(CountMinSketch *cms, uint64_t *hashes,
   return num_add;
 }
 
-int32_t cms_add_inc(CountMinSketch *cms, const char *key, unsigned int x) {
+double cms_add_inc(CountMinSketch *cms, const char *key, double x) {
   uint64_t *hashes = cms_get_hashes(cms, key);
-  int32_t num_add = cms_add_inc_alt(cms, hashes, cms->depth, x);
+  double num_add = cms_add_inc_alt(cms, hashes, cms->depth, x);
   free(hashes);
   return num_add;
 }
@@ -136,14 +136,14 @@ int32_t cms_remove_inc(CountMinSketch *cms, const char *key, uint32_t x) {
   return num_add;
 }
 
-int32_t cms_check_alt(CountMinSketch *cms, uint64_t *hashes,
+double cms_check_alt(CountMinSketch *cms, uint64_t *hashes,
                       unsigned int num_hashes) {
   if (num_hashes < cms->depth) {
     fprintf(stderr, "Insufficient hashes to complete the min lookup of the "
                     "element to the count-min sketch!");
     return CMS_ERROR;
   }
-  int32_t num_add = INT32_MAX;
+  double num_add = INT32_MAX;
   for (unsigned int i = 0; i < cms->depth; ++i) {
     uint32_t bin = (hashes[i] % cms->width) + (i * cms->width);
     if (cms->bins[bin] < num_add) {
@@ -153,9 +153,9 @@ int32_t cms_check_alt(CountMinSketch *cms, uint64_t *hashes,
   return num_add;
 }
 
-int32_t cms_check(CountMinSketch *cms, const char *key) {
+double cms_check(CountMinSketch *cms, const char *key) {
   uint64_t *hashes = cms_get_hashes(cms, key);
-  int32_t num_add = cms_check_alt(cms, hashes, cms->depth);
+  double num_add = cms_check_alt(cms, hashes, cms->depth);
   free(hashes);
   return num_add;
 }
