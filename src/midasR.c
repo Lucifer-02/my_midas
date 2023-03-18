@@ -14,8 +14,8 @@ MidasR *midasRInit(int depth, int width, double factor) {
 
   // print error rate and confidence
   printf("MIDAS-R: Depth: %d, Width: %d, Error rate: %f, Confidence: %f\n",
-         depth, width, midasR->numCurrentEdge.error_rate,
-         midasR->numCurrentEdge.confidence);
+		 depth, width, midasR->numCurrentEdge.error_rate,
+		 midasR->numCurrentEdge.confidence);
 
   return midasR;
 }
@@ -61,12 +61,12 @@ double midasROperator(MidasR *midasR, Input input) {
   cms_add(&(midasR->numCurrentDestination), hash_dst);
   cms_add(&(midasR->numTotalDestination), hash_dst);
 
-  static int i = 1000;
-  if (i-- > 0) {
-    printf("Current: %lf, Total: %lf\n",
-           cms_check(&(midasR->numCurrentEdge), hash_edge),
-           cms_check(&(midasR->numTotalEdge), hash_edge));
-  }
+  /** static int i = 1000; */
+  /** if (i-- > 0) { */
+  /**   printf("Current: %lf, Total: %lf\n", */
+  /**          cms_check(&(midasR->numCurrentEdge), hash_edge), */
+  /**          cms_check(&(midasR->numTotalEdge), hash_edge)); */
+  /** } */
 
   return max(
       ComputeScore(cms_check(&(midasR->numCurrentEdge), hash_edge),

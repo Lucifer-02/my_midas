@@ -1,6 +1,6 @@
 CC=gcc
 SRCDIR=src
-COMPFLAGS= -O3 -lm -Wall -Wextra -Wpedantic -Winline -Wno-long-long 
+COMPFLAGS= -g -lm -Wall -Wextra -Wpedantic -Winline -Wno-long-long 
 INPUT_DIR=data
 SCORE=temp/Score.txt
 LIB=src/count_min_sketch.c  src/auroc.c src/midas.c src/midasR.c src/prepare.c

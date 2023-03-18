@@ -4,6 +4,8 @@
 #include "src/midasR.h"
 #include "src/prepare.h"
 
+#include <time.h>
+
 int main(int argc, char const *argv[]) {
 
   if (argc != 4) {
@@ -22,15 +24,20 @@ int main(int argc, char const *argv[]) {
   double *const labels = malloc(N * sizeof(double));
   double *const scores = malloc(N * sizeof(double));
 
-  read_data(argv[1], src, dst, ts, N);
-  // read truth labels
+  read_data(argv[1], src, dst, ts, N); // read truth labels
   read_labels(argv[3], labels, N);
 
   int widths[] = {1024};
   int depth = 2;
   int num_width = sizeof(widths) / sizeof(widths[0]);
 
+  // setup time to execute measurement
+  clock_t start_time, end_time;
+  double total_time;
+
   for (int i = 0; i < num_width; i++) {
+
+    start_time = clock();
 
     MidasR *midasR = midasRInit(depth, widths[i], 0.5);
 
@@ -40,22 +47,36 @@ int main(int argc, char const *argv[]) {
       scores[j] = midasROperator(midasR, input);
     }
 
+    end_time = clock();
+
+    // get total time
+    total_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+    printf("Total time: %lf\n", total_time);
+
     // compute AUROC
     double const aurocR = AUROC(labels, scores, N);
     printf("AUROC: %lf\n", aurocR);
 
     //---------------------------------------------
-    /** Midas *midas = midasInit(depth, widths[i]); */
-    /**  */
-    /** for (int j = 0; j < N; j++) { */
-    /**  */
-    /**   Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]}; */
-    /**   scores[j] = midasOperator(midas, input); */
-    /** } */
-    /**  */
-    /** // compute AUROC */
-    /** double const auroc = AUROC(labels, scores, N); */
-    /** printf("AUROC: %lf\n", auroc); */
+    start_time = clock();
+
+    Midas *midas = midasInit(depth, widths[i]);
+
+    for (int j = 0; j < N; j++) {
+
+      Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]};
+      scores[j] = midasOperator(midas, input);
+    }
+
+    end_time = clock();
+
+    // get total time
+    total_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+    printf("Total time: %lf\n", total_time);
+
+    // compute AUROC
+    double const auroc = AUROC(labels, scores, N);
+    printf("AUROC: %lf\n", auroc);
   };
 
   /** FILE *const fscore = fopen("./temp/Score.txt", "w"); */

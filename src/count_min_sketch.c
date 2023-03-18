@@ -21,18 +21,9 @@
 static int __setup_cms(CountMinSketch *cms, uint32_t width, uint32_t depth,
                        double error_rate, double confidence,
                        cms_hash_function hash_function);
-static void __write_to_file(CountMinSketch *cms, FILE *fp, short on_disk);
-static void __read_from_file(CountMinSketch *cms, FILE *fp, short on_disk,
-                             const char *filename);
-static void __merge_cms(CountMinSketch *base, int num_sketches, va_list *args);
-static int __validate_merge(CountMinSketch *base, int num_sketches,
-                            va_list *args);
 static uint64_t *__default_hash(unsigned int num_hashes, const char *key);
 static uint64_t __fnv_1a(const char *key, int seed);
 static int __compare(const void *a, const void *b);
-static int32_t __safe_add(int32_t a, uint32_t b);
-static int32_t __safe_sub(int32_t a, uint32_t b);
-static int32_t __safe_add_2(int32_t a, int32_t b);
 
 // Compatibility with non-clang compilers
 #ifndef __has_builtin
@@ -113,31 +104,6 @@ double cms_add_inc(CountMinSketch *cms, const char *key, double x) {
   return num_add;
 }
 
-int32_t cms_remove_inc_alt(CountMinSketch *cms, uint64_t *hashes,
-                           unsigned int num_hashes, unsigned int x) {
-  if (num_hashes < cms->depth) {
-    fprintf(stderr, "Insufficient hashes to complete the removal of the "
-                    "element to the count-min sketch!");
-    return CMS_ERROR;
-  }
-  int32_t num_add = INT32_MAX;
-  for (unsigned int i = 0; i < cms->depth; ++i) {
-    uint32_t bin = (hashes[i] % cms->width) + (i * cms->width);
-    cms->bins[bin] = __safe_sub(cms->bins[bin], x);
-    if (cms->bins[bin] < num_add) {
-      num_add = cms->bins[bin];
-    }
-  }
-  cms->elements_added -= x;
-  return num_add;
-}
-
-int32_t cms_remove_inc(CountMinSketch *cms, const char *key, uint32_t x) {
-  uint64_t *hashes = cms_get_hashes(cms, key);
-  int32_t num_add = cms_remove_inc_alt(cms, hashes, cms->depth, x);
-  free(hashes);
-  return num_add;
-}
 
 double cms_check_alt(CountMinSketch *cms, uint64_t *hashes,
                       unsigned int num_hashes) {
@@ -223,80 +189,7 @@ uint64_t *cms_get_hashes_alt(CountMinSketch *cms, unsigned int num_hashes,
   return cms->hash_function(num_hashes, key);
 }
 
-int cms_export(CountMinSketch *cms, const char *filepath) {
-  FILE *fp;
-  fp = fopen(filepath, "w+b");
-  if (fp == NULL) {
-    fprintf(stderr, "Can't open file %s!\n", filepath);
-    return CMS_ERROR;
-  }
-  __write_to_file(cms, fp, 0);
-  fclose(fp);
-  return CMS_SUCCESS;
-}
 
-int cms_import_alt(CountMinSketch *cms, const char *filepath,
-                   cms_hash_function hash_function) {
-  FILE *fp;
-  fp = fopen(filepath, "r+b");
-  if (fp == NULL) {
-    fprintf(stderr, "Can't open file %s!\n", filepath);
-    return CMS_ERROR;
-  }
-  __read_from_file(cms, fp, 0, NULL);
-  cms->hash_function = (hash_function == NULL) ? __default_hash : hash_function;
-  fclose(fp);
-  return CMS_SUCCESS;
-}
-
-int cms_merge(CountMinSketch *cms, int num_sketches, ...) {
-  CountMinSketch *base;
-  va_list ap;
-
-  /* Test compatibility */
-  va_start(ap, num_sketches);
-  int res = __validate_merge(NULL, num_sketches, &ap);
-  va_end(ap);
-
-  if (CMS_ERROR == res)
-    return CMS_ERROR;
-
-  /* Merge */
-  va_start(ap, num_sketches);
-  base = (CountMinSketch *)va_arg(ap, CountMinSketch *);
-  if (CMS_ERROR == __setup_cms(cms, base->width, base->depth, base->error_rate,
-                               base->confidence, base->hash_function)) {
-    va_end(ap);
-    return CMS_ERROR;
-  }
-  va_end(ap);
-
-  va_start(ap, num_sketches);
-  __merge_cms(cms, num_sketches, &ap);
-  va_end(ap);
-
-  return CMS_SUCCESS;
-}
-
-int cms_merge_into(CountMinSketch *cms, int num_sketches, ...) {
-  va_list ap;
-
-  /* validate all the count-min sketches are of the same dimensions and hash
-   * function */
-  va_start(ap, num_sketches);
-  int res = __validate_merge(cms, num_sketches, &ap);
-  va_end(ap);
-
-  if (CMS_ERROR == res)
-    return CMS_ERROR;
-
-  /* merge */
-  va_start(ap, num_sketches);
-  __merge_cms(cms, num_sketches, &ap);
-  va_end(ap);
-
-  return CMS_SUCCESS;
-}
 
 void multipleAll(CountMinSketch *cms, double by, int width, int depth) {
   for (int i = 0; i < depth; i++) {
@@ -328,100 +221,6 @@ static int __setup_cms(CountMinSketch *cms, unsigned int width,
   return CMS_SUCCESS;
 }
 
-static void __write_to_file(CountMinSketch *cms, FILE *fp, short on_disk) {
-  unsigned long long length = cms->depth * cms->width;
-  if (on_disk == 0) {
-    for (unsigned long long i = 0; i < length; ++i) {
-      fwrite(&cms->bins[i], sizeof(int32_t), 1, fp);
-    }
-  } else {
-    // TODO: decide if this should be done directly on disk or not
-    // will need to write out everything by hand
-    // uint64_t i;
-    // int q = 0;
-    // for (i = 0; i < length; ++i) {
-    //     fwrite(&q, sizeof(int), 1, fp);
-    // }
-  }
-  fwrite(&cms->width, sizeof(int32_t), 1, fp);
-  fwrite(&cms->depth, sizeof(int32_t), 1, fp);
-  fwrite(&cms->elements_added, sizeof(int64_t), 1, fp);
-}
-
-static void __read_from_file(CountMinSketch *cms, FILE *fp, short on_disk,
-                             const char *filename) {
-  /* read in the values from the file before getting the sketch itself */
-  int offset = (sizeof(int32_t) * 2) + sizeof(long);
-  fseek(fp, offset * -1, SEEK_END);
-
-  fread(&cms->width, sizeof(int32_t), 1, fp);
-  fread(&cms->depth, sizeof(int32_t), 1, fp);
-  cms->confidence = 1 - (1 / pow(2, cms->depth));
-  cms->error_rate = 2 / (double)cms->width;
-  fread(&cms->elements_added, sizeof(int64_t), 1, fp);
-
-  rewind(fp);
-  size_t length = cms->width * cms->depth;
-  if (on_disk == 0) {
-    cms->bins = (double*)malloc(length * sizeof(double));
-    size_t read = fread(cms->bins, sizeof(int32_t), length, fp);
-    if (read != length) {
-      perror("__read_from_file: ");
-      exit(1);
-    }
-  } else {
-    // TODO: decide if this should be done directly on disk or not
-  }
-}
-
-static void __merge_cms(CountMinSketch *base, int num_sketches, va_list *args) {
-  int i;
-  uint32_t bin, bins = (base->width * base->depth);
-
-  va_list ap;
-  va_copy(ap, *args);
-
-  for (i = 0; i < num_sketches; ++i) {
-    CountMinSketch *individual_cms = va_arg(ap, CountMinSketch *);
-    base->elements_added += individual_cms->elements_added;
-    for (bin = 0; bin < bins; ++bin) {
-      base->bins[bin] =
-          __safe_add_2(base->bins[bin], individual_cms->bins[bin]);
-    }
-  }
-  va_end(ap);
-}
-
-static int __validate_merge(CountMinSketch *base, int num_sketches,
-                            va_list *args) {
-  int i = 0;
-  va_list ap;
-  va_copy(ap, *args);
-
-  if (base == NULL) {
-    base = (CountMinSketch *)va_arg(ap, CountMinSketch *);
-    ++i;
-  }
-
-  for (/* skip */; i < num_sketches; ++i) {
-    CountMinSketch *individual_cms = va_arg(ap, CountMinSketch *);
-    if (!(base->depth == individual_cms->depth &&
-          base->width == individual_cms->width &&
-          base->hash_function == individual_cms->hash_function)) {
-
-      fprintf(stderr,
-              "Cannot merge sketches due to incompatible definitions "
-              "(depth=(%d/%d) width=(%d/%d) hash=(0x%" PRIXPTR "/0x%" PRIXPTR
-              "))",
-              base->depth, individual_cms->depth, base->width,
-              individual_cms->width, (uintptr_t)base->hash_function,
-              (uintptr_t)individual_cms->hash_function);
-      va_end(ap);
-      return CMS_ERROR;
-    }
-  }
-  return CMS_SUCCESS;
-}
 
 /* NOTE: The caller will free the results */
 static uint64_t *__default_hash(unsigned int num_hashes, const char *str) {
@@ -448,59 +247,4 @@ static int __compare(const void *a, const void *b) {
   return (*(int64_t *)a - *(int64_t *)b);
 }
 
-static int32_t __safe_add(int32_t a, uint32_t b) {
-  if (a == INT32_MAX || a == INT32_MIN) {
-    return a;
-  }
 
-  /* use the gcc macro if compiling with GCC, otherwise, simple overflow check
-   */
-  int32_t c = 0;
-#if (__has_builtin(__builtin_add_overflow)) ||                                 \
-    (defined(__GNUC__) && __GNUC__ >= 5)
-  bool bl = __builtin_add_overflow(a, b, &c);
-  if (bl) {
-    c = INT32_MAX;
-  }
-#else
-  c = ((int64_t)a + b > INT32_MAX) ? INT32_MAX : (a + b);
-#endif
-
-  return c;
-}
-
-static int32_t __safe_sub(int32_t a, uint32_t b) {
-  if (a == INT32_MAX || a == INT32_MIN) {
-    return a;
-  }
-
-  /* use the gcc macro if compiling with GCC, otherwise, simple overflow check
-   */
-  int32_t c = 0;
-#if (__has_builtin(__builtin_sub_overflow)) ||                                 \
-    (defined(__GNUC__) && __GNUC__ >= 5)
-  bool bl = __builtin_sub_overflow(a, b, &c);
-  if (bl) {
-    c = INT32_MIN;
-  }
-#else
-  c = ((int64_t)b - a < INT32_MIN) ? INT32_MAX : (a - b);
-#endif
-
-  return c;
-}
-
-static int32_t __safe_add_2(int32_t a, int32_t b) {
-  if (a == INT32_MAX || a == INT32_MIN) {
-    return a;
-  }
-
-  /* use the gcc macro if compiling with GCC, otherwise, simple overflow check
-   */
-  int64_t c = (int64_t)a + (int64_t)b;
-  if (c <= INT32_MIN)
-    return INT32_MIN;
-  else if (c >= INT32_MAX)
-    return INT32_MAX;
-  return (int32_t)c;
-}

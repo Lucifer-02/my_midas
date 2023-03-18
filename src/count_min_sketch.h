@@ -92,19 +92,6 @@ int cms_clear(CountMinSketch *cms);
         CMS_ERROR   - When file is unable to be opened */
 int cms_export(CountMinSketch *cms, const char *filepath);
 
-/*  Import count-min sketch from file
-
-    Return:
-        CMS_SUCCESS - When file is opened and written
-        CMS_ERROR   - When file is unable to be opened
-
-    NOTE: It is up to the caller to provide the correct hashing algorithm */
-int cms_import_alt(CountMinSketch *cms, const char *filepath,
-                   cms_hash_function hash_function);
-static __inline__ int cms_import(CountMinSketch *cms, const char *filepath) {
-  return cms_import_alt(cms, filepath, NULL);
-}
-
 /*  Insertion family of functions:
 
     Insert the provided key or hash values into the count-min sketch X number of
@@ -125,7 +112,7 @@ static __inline__ int cms_import(CountMinSketch *cms, const char *filepath) {
 /* Add the provided key to the count-min sketch `x` times */
 double cms_add_inc(CountMinSketch *cms, const char *key, double x);
 double cms_add_inc_alt(CountMinSketch *cms, uint64_t *hashes,
-                        unsigned int num_hashes, double x);
+                       unsigned int num_hashes, double x);
 
 /* Add the provided key to the count-min sketch */
 static __inline__ int32_t cms_add(CountMinSketch *cms, const char *key) {
@@ -136,28 +123,10 @@ static __inline__ int32_t cms_add_alt(CountMinSketch *cms, uint64_t *hashes,
   return cms_add_inc_alt(cms, hashes, num_hashes, 1.0);
 }
 
-/*  Remove the provided key to the count-min sketch `x` times;
-    NOTE: Result Values can be negative
-    NOTE: Best check method when remove is used is `cms_check_mean` */
-int32_t cms_remove_inc(CountMinSketch *cms, const char *key, uint32_t x);
-int32_t cms_remove_inc_alt(CountMinSketch *cms, uint64_t *hashes,
-                           unsigned int num_hashes, uint32_t x);
-
-/*  Remove the provided key to the count-min sketch;
-    NOTE: Result Values can be negative
-    NOTE: Best check method when remove is used is `cms_check_mean` */
-static __inline__ int32_t cms_remove(CountMinSketch *cms, const char *key) {
-  return cms_remove_inc(cms, key, 1);
-}
-static __inline__ int32_t cms_remove_alt(CountMinSketch *cms, uint64_t *hashes,
-                                         unsigned int num_hashes) {
-  return cms_remove_inc_alt(cms, hashes, num_hashes, 1);
-}
-
 /* Determine the maximum number of times the key may have been inserted */
 double cms_check(CountMinSketch *cms, const char *key);
 double cms_check_alt(CountMinSketch *cms, uint64_t *hashes,
-                      unsigned int num_hashes);
+                     unsigned int num_hashes);
 static __inline__ double cms_check_min(CountMinSketch *cms, const char *key) {
   return cms_check(cms, key);
 }
@@ -189,28 +158,6 @@ static __inline__ uint64_t *cms_get_hashes(CountMinSketch *cms,
                                            const char *key) {
   return cms_get_hashes_alt(cms, cms->depth, key);
 }
-
-/*  Initialized count-min sketch and merge the cms' directly into the newly
-    initialized object
-    Return:
-        CMS_SUCCESS - When all count-min sketches are of the same size, etc and
-                      were successfully merged
-        CMS_ERROR   - When there was an error completing the merge; including
-                      when the cms' are not all of the same demensions, unable
-                      to allocate the correct memory, etc.
-*/
-int cms_merge(CountMinSketch *cms, int num_sketches, ...);
-
-/*  Merge the count-min sketches into a previously initlized object that may
-    not be empty
-    Return:
-        CMS_SUCCESS - When all count-min sketches are of the same size, etc and
-                      were successfully merged
-        CMS_ERROR   - When there was an error completing the merge; including
-                      when the cms' are not all of the same demensions, unable
-                      to allocate the correct memory, etc.
-*/
-int cms_merge_into(CountMinSketch *cms, int num_sketches, ...);
 
 void multipleAll(CountMinSketch *cms, double by, int width, int depth);
 
