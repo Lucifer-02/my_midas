@@ -1,4 +1,5 @@
 #include "midas.h"
+#include "count_min_sketch.h"
 #include <stdio.h>
 
 static double ComputeScore(double a, double s, double t) {
@@ -13,7 +14,7 @@ Midas *midasInit(int depth, int width) {
 
   // print error rate and confidence
   printf("MIDAS: Depth: %d, Width: %d, Error rate: %f, Confidence: %f\n", depth,
-		 width, midas->current.error_rate, midas->current.confidence);
+         width, midas->current.error_rate, midas->current.confidence);
 
   return midas;
 }
@@ -29,9 +30,13 @@ double midasOperator(Midas *midas, Input input) {
   cms_add(&(midas->current), hash);
   cms_add(&(midas->total), hash);
 
+  /** my_add(&(midas->current), hash, 1.0); */
+  /** my_add(&(midas->total), hash, 1.0); */
+
   /** static int i = 1000; */
   /** if (i-- > 0) { */
-  /**   printf("Current: %lf, Total: %lf\n", cms_check(&(midas->current), hash), */
+  /**   printf("Current: %lf, Total: %lf\n", cms_check(&(midas->current), hash),
+   */
   /**          cms_check(&(midas->total), hash)); */
   /** } */
 

@@ -110,17 +110,15 @@ int cms_export(CountMinSketch *cms, const char *filepath);
 */
 
 /* Add the provided key to the count-min sketch `x` times */
-double cms_add_inc(CountMinSketch *cms, const char *key, double x);
-double cms_add_inc_alt(CountMinSketch *cms, uint64_t *hashes,
-                       unsigned int num_hashes, double x);
+void cms_add_inc(CountMinSketch *cms, const char *key, double x);
+void cms_add_inc_alt(CountMinSketch *cms, uint64_t *hashes, double x);
 
 /* Add the provided key to the count-min sketch */
-static __inline__ int32_t cms_add(CountMinSketch *cms, const char *key) {
-  return cms_add_inc(cms, key, 1.0);
+static __inline__ void cms_add(CountMinSketch *cms, const char *key) {
+  cms_add_inc(cms, key, 1.0);
 }
-static __inline__ int32_t cms_add_alt(CountMinSketch *cms, uint64_t *hashes,
-                                      unsigned int num_hashes) {
-  return cms_add_inc_alt(cms, hashes, num_hashes, 1.0);
+static __inline__ void cms_add_alt(CountMinSketch *cms, uint64_t *hashes) {
+  cms_add_inc_alt(cms, hashes, 1.0);
 }
 
 /* Determine the maximum number of times the key may have been inserted */
@@ -143,9 +141,9 @@ int32_t cms_check_mean(CountMinSketch *cms, const char *key);
 int32_t cms_check_mean_alt(CountMinSketch *cms, uint64_t *hashes,
                            unsigned int num_hashes);
 
-int32_t cms_check_mean_min(CountMinSketch *cms, const char *key);
-int32_t cms_check_mean_min_alt(CountMinSketch *cms, uint64_t *hashes,
-                               unsigned int num_hashes);
+double cms_check_mean_min(CountMinSketch *cms, const char *key);
+double cms_check_mean_min_alt(CountMinSketch *cms, uint64_t *hashes,
+                              unsigned int num_hashes);
 
 /*  Return the hashes for the provided key based on the hashing function of
     the count-min sketch
@@ -160,6 +158,8 @@ static __inline__ uint64_t *cms_get_hashes(CountMinSketch *cms,
 }
 
 void multipleAll(CountMinSketch *cms, double by, int width, int depth);
+void my_add(CountMinSketch *cms, const char *key, double x);
+double cms_check_median(CountMinSketch *cms, const char *key);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -40,4 +40,5 @@ pre:
 	python3 util/PreprocessData.py
 
 exp:
-	gcc -o test test.c src/count_min_sketch.c -lm; ./test; python3 util/EvaluateScore.py data/DARPA/Label.csv $(SCORE)
+	gcc -o test test.c src/count_min_sketch.c -lm; ./test
+

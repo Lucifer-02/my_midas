@@ -27,8 +27,8 @@ int main(int argc, char const *argv[]) {
   read_data(argv[1], src, dst, ts, N); // read truth labels
   read_labels(argv[3], labels, N);
 
-  int widths[] = {1024};
-  int depth = 2;
+  int widths[] = {1024 * 8};
+  int depth = 4;
   int num_width = sizeof(widths) / sizeof(widths[0]);
 
   // setup time to execute measurement
@@ -39,7 +39,7 @@ int main(int argc, char const *argv[]) {
 
     start_time = clock();
 
-    MidasR *midasR = midasRInit(depth, widths[i], 0.5);
+    MidasR *midasR = midasRInit(depth, widths[i], 0.9);
 
     for (int j = 0; j < N; j++) {
 

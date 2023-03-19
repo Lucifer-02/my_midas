@@ -4,21 +4,29 @@
 int main() {
 
   CountMinSketch cms;
-  int const width = 100;
-  int const depth = 2;
+  int const width = 3;
+  int const depth = 32;
   cms_init(&cms, width, depth);
 
-  int i, res;
-  for (i = 0; i < 100; i++) {
-    res = cms_add(&cms, "this is a test");
+  double res;
+  for (int i = 0; i < 100; i++) {
+    cms_add(&cms, "a");
   }
 
-  for (i = 0; i < 15; i++) {
-    res = cms_add(&cms, "is a test");
+  for (int i = 0; i < 15; i++) {
+    cms_add(&cms, "b");
   }
 
-  res = cms_check(&cms, "this is a test");
-  multipleAll(&cms, 0.5, width, depth);
-  printf("result: %d\n", res);
+  for (int i = 0; i < 5; i++) {
+    cms_add(&cms, "c");
+  }
+
+  for (int i = 0; i < 5; i++) {
+    cms_add(&cms, "d");
+  }
+  printf("result: %lf\n", cms_check(&cms, "a"));
+  printf("result: %lf\n", cms_check(&cms, "b"));
+  printf("result: %lf\n", cms_check(&cms, "c"));
+  printf("result: %lf\n", cms_check(&cms, "d"));
   cms_destroy(&cms);
 }

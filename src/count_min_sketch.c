@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #define LOG_TWO 0.6931471805599453
 
@@ -24,6 +25,7 @@ static int __setup_cms(CountMinSketch *cms, uint32_t width, uint32_t depth,
 static uint64_t *__default_hash(unsigned int num_hashes, const char *key);
 static uint64_t __fnv_1a(const char *key, int seed);
 static int __compare(const void *a, const void *b);
+static int __double_compare(const void *a, const void *b);
 
 // Compatibility with non-clang compilers
 #ifndef __has_builtin
@@ -77,36 +79,47 @@ int cms_clear(CountMinSketch *cms) {
   return CMS_SUCCESS;
 }
 
-double cms_add_inc_alt(CountMinSketch *cms, uint64_t *hashes,
-                        unsigned int num_hashes, double x) {
-  if (num_hashes < cms->depth) {
-    fprintf(stderr, "Insufficient hashes to complete the addition of the "
-                    "element to the count-min sketch!");
-    return CMS_ERROR;
-  }
-  double num_add = INT32_MAX;
+void cms_add_inc_alt(CountMinSketch *cms, uint64_t *hashes, double x) {
   for (unsigned int i = 0; i < cms->depth; ++i) {
     uint64_t bin = (hashes[i] % cms->width) + (i * cms->width);
     cms->bins[bin] = cms->bins[bin] + x;
-    /* currently a standard min strategy */
-    if (cms->bins[bin] < num_add) {
-      num_add = cms->bins[bin];
+  }
+
+  cms->elements_added += x;
+}
+
+void cms_add_inc(CountMinSketch *cms, const char *key, double x) {
+  uint64_t *hashes = cms_get_hashes(cms, key);
+  cms_add_inc_alt(cms, hashes, x);
+  free(hashes);
+}
+
+void my_add(CountMinSketch *cms, const char *key, double x) {
+  // Set the random seed based on the current time
+  srand(time(NULL));
+
+  // Set the minimum and maximum values
+  int min = 0;
+  int max = 100;
+  int random_value;
+
+  uint64_t *hashes = cms_get_hashes(cms, key);
+  for (unsigned int i = 0; i < cms->depth; ++i) {
+
+    random_value = min + rand() % (max - min + 1);
+
+    if (random_value < 25) {
+      uint64_t bin = (hashes[i] % cms->width) + (i * cms->width);
+      cms->bins[bin] = cms->bins[bin] + x;
     }
   }
+
   cms->elements_added += x;
-  return num_add;
-}
-
-double cms_add_inc(CountMinSketch *cms, const char *key, double x) {
-  uint64_t *hashes = cms_get_hashes(cms, key);
-  double num_add = cms_add_inc_alt(cms, hashes, cms->depth, x);
   free(hashes);
-  return num_add;
 }
-
 
 double cms_check_alt(CountMinSketch *cms, uint64_t *hashes,
-                      unsigned int num_hashes) {
+                     unsigned int num_hashes) {
   if (num_hashes < cms->depth) {
     fprintf(stderr, "Insufficient hashes to complete the min lookup of the "
                     "element to the count-min sketch!");
@@ -151,18 +164,18 @@ int32_t cms_check_mean(CountMinSketch *cms, const char *key) {
   return num_add;
 }
 
-int32_t cms_check_mean_min_alt(CountMinSketch *cms, uint64_t *hashes,
-                               unsigned int num_hashes) {
+double cms_check_mean_min_alt(CountMinSketch *cms, uint64_t *hashes,
+                              unsigned int num_hashes) {
   if (num_hashes < cms->depth) {
     fprintf(stderr, "Insufficient hashes to complete the mean-min lookup of "
                     "the element to the count-min sketch!");
     return CMS_ERROR;
   }
-  int32_t num_add = 0;
-  int64_t *mean_min_values = (int64_t *)calloc(cms->depth, sizeof(int64_t));
+  double num_add = 0;
+  double *mean_min_values = (double *)calloc(cms->depth, sizeof(double));
   for (unsigned int i = 0; i < cms->depth; ++i) {
     uint32_t bin = (hashes[i] % cms->width) + (i * cms->width);
-    int32_t val = cms->bins[bin];
+    double val = cms->bins[bin];
     mean_min_values[i] = val - ((cms->elements_added - val) / (cms->width - 1));
   }
   // return the median of the mean_min_value array... need to sort first
@@ -177,9 +190,41 @@ int32_t cms_check_mean_min_alt(CountMinSketch *cms, uint64_t *hashes,
   return num_add;
 }
 
-int32_t cms_check_mean_min(CountMinSketch *cms, const char *key) {
+double cms_check_mean_min(CountMinSketch *cms, const char *key) {
   uint64_t *hashes = cms_get_hashes(cms, key);
-  int32_t num_add = cms_check_mean_min_alt(cms, hashes, cms->depth);
+  double num_add = cms_check_mean_min_alt(cms, hashes, cms->depth);
+  free(hashes);
+  return num_add;
+}
+
+static double cms_check_median_alt(CountMinSketch *cms, uint64_t *hashes,
+                                   unsigned int num_hashes) {
+  if (num_hashes < cms->depth) {
+    fprintf(stderr, "Insufficient hashes to complete the median lookup of the "
+                    "element to the count-min sketch!");
+    return CMS_ERROR;
+  }
+  double num_add = 0;
+  double *median_values = (double *)calloc(cms->depth, sizeof(double));
+  for (unsigned int i = 0; i < cms->depth; ++i) {
+    uint32_t bin = (hashes[i] % cms->width) + (i * cms->width);
+    median_values[i] = cms->bins[bin];
+  }
+  // return the median of the median_values array... need to sort first
+  qsort(median_values, cms->depth, sizeof(int64_t), __double_compare);
+  int32_t n = cms->depth;
+  if (n % 2 == 0) {
+    num_add = (median_values[n / 2] + median_values[n / 2 - 1]) / 2;
+  } else {
+    num_add = median_values[n / 2];
+  }
+  free(median_values);
+  return num_add;
+}
+
+double cms_check_median(CountMinSketch *cms, const char *key) {
+  uint64_t *hashes = cms_get_hashes(cms, key);
+  double num_add = cms_check_median_alt(cms, hashes, cms->depth);
   free(hashes);
   return num_add;
 }
@@ -188,8 +233,6 @@ uint64_t *cms_get_hashes_alt(CountMinSketch *cms, unsigned int num_hashes,
                              const char *key) {
   return cms->hash_function(num_hashes, key);
 }
-
-
 
 void multipleAll(CountMinSketch *cms, double by, int width, int depth) {
   for (int i = 0; i < depth; i++) {
@@ -221,7 +264,6 @@ static int __setup_cms(CountMinSketch *cms, unsigned int width,
   return CMS_SUCCESS;
 }
 
-
 /* NOTE: The caller will free the results */
 static uint64_t *__default_hash(unsigned int num_hashes, const char *str) {
   uint64_t *results = (uint64_t *)calloc(num_hashes, sizeof(uint64_t));
@@ -247,4 +289,6 @@ static int __compare(const void *a, const void *b) {
   return (*(int64_t *)a - *(int64_t *)b);
 }
 
-
+static int __double_compare(const void *a, const void *b) {
+  return (*(double *)a - *(double *)b);
+}
