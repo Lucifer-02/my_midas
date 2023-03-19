@@ -3,8 +3,8 @@
 
 #include "count_min_sketch.h"
 #include "prepare.h"
-#include <stdlib.h>
 #include <math.h>
+#include <stdlib.h>
 
 typedef struct {
   double factor;
@@ -16,5 +16,7 @@ typedef struct {
 
 MidasR *midasRInit(int depth, int width, double factor);
 double midasROperator(MidasR *midasR, Input input);
+double new_midasROperator(MidasR *midasR, Input input);
+void midasRFree(MidasR *midasR);
 
 #endif

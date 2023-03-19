@@ -11,5 +11,7 @@
 /// @param n Number of elements in the array
 /// @return AUROC/ROC-AUC score, range [0.0, 1.0]
 double AUROC(const double *yTrue, const double *yPred, size_t n);
+// another version of AUROC
+double calculateAUC(double estimates[], double truths[], int length);
 
 #endif // AUROC_H

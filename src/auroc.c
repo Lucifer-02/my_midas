@@ -1,7 +1,7 @@
 #include "auroc.h"
-
 // implement qsort using elements in yPred to compare
 static void my_qsort(size_t *base, size_t size, const double *yPred) {
+
   if (size <= 1)
     return;
 
@@ -26,6 +26,61 @@ static void my_qsort(size_t *base, size_t size, const double *yPred) {
   my_qsort(base + (i + 1), size - i - 1, yPred);
 }
 
+typedef struct {
+  size_t left;
+  size_t right;
+} StackItem;
+
+void my_qsort2(size_t *base, size_t size, const double *yPred) {
+
+  if (size <= 1)
+    return;
+
+  // create a stack to hold sub-array bounds
+  size_t max_depth = log2(size) * 2;
+  StackItem *stack = malloc(max_depth * sizeof(StackItem));
+  size_t stack_top = 0;
+
+  // push the initial sub-array bounds onto the stack
+  stack[stack_top++] = (StackItem){0, size - 1};
+
+  while (stack_top > 0) {
+    // pop the top sub-array bounds from the stack
+    StackItem item = stack[--stack_top];
+    size_t left = item.left;
+    size_t right = item.right;
+
+    // partition the sub-array
+    size_t i = left, j = right;
+    size_t pivot = i;
+    while (i < j) {
+      while (i < j && yPred[*(base + j)] <= yPred[*(base + pivot)])
+        j--;
+      while (i < j && yPred[*(base + i)] >= yPred[*(base + pivot)])
+        i++;
+      if (i < j) {
+        size_t tmp = *(base + i);
+        *(base + i) = *(base + j);
+        *(base + j) = tmp;
+      }
+    }
+    size_t tmp = *(base + i);
+    *(base + i) = *(base + pivot);
+    *(base + pivot) = tmp;
+
+    // push the left and right sub-arrays onto the stack if they exist
+    if (i > left && stack_top < max_depth) {
+      stack[stack_top++] = (StackItem){left, i - 1};
+    }
+    if (j < right && stack_top < max_depth) {
+      stack[stack_top++] = (StackItem){j + 1, right};
+    }
+  }
+
+  free(stack);
+}
+
+
 /// @tparam T Type of array elements, should be a floating number type
 /// @param yTrue Array of ground truth labels, 0.0 is negative, 1.0 is positive
 /// @param yPred Array of predicted scores, can be of any range
@@ -41,7 +96,7 @@ double AUROC(const double *yTrue, const double *yPred, size_t n) {
   for (size_t i = 0; i < n; i++)
     index[i] = i;
 
-  my_qsort(index, n, yPred);
+  my_qsort2(index, n, yPred);
 
   double *y = malloc(n * sizeof(double)); // Desc
   double *z = malloc(n * sizeof(double)); // Desc

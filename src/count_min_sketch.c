@@ -108,7 +108,7 @@ void my_add(CountMinSketch *cms, const char *key, double x) {
 
     random_value = min + rand() % (max - min + 1);
 
-    if (random_value < 25) {
+    if (random_value < 20) {
       uint64_t bin = (hashes[i] % cms->width) + (i * cms->width);
       cms->bins[bin] = cms->bins[bin] + x;
     }

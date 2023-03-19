@@ -10,7 +10,7 @@ Midas *midasInit(int depth, int width) {
   Midas *midas = malloc(sizeof(Midas));
   cms_init(&(midas->current), width, depth);
   cms_init(&(midas->total), width, depth);
-  midas->current_ts = 0;
+  midas->current_ts = 1;
 
   // print error rate and confidence
   printf("MIDAS: Depth: %d, Width: %d, Error rate: %f, Confidence: %f\n", depth,
@@ -30,16 +30,26 @@ double midasOperator(Midas *midas, Input input) {
   cms_add(&(midas->current), hash);
   cms_add(&(midas->total), hash);
 
-  /** my_add(&(midas->current), hash, 1.0); */
-  /** my_add(&(midas->total), hash, 1.0); */
-
-  /** static int i = 1000; */
-  /** if (i-- > 0) { */
-  /**   printf("Current: %lf, Total: %lf\n", cms_check(&(midas->current), hash),
-   */
-  /**          cms_check(&(midas->total), hash)); */
-  /** } */
-
   return ComputeScore(cms_check(&(midas->current), hash),
                       cms_check(&(midas->total), hash), input.ts);
+}
+
+double new_midasOperator(Midas *midas, Input input) {
+  if (input.ts > midas->current_ts) {
+    cms_clear(&(midas->current));
+    midas->current_ts = input.ts;
+  }
+
+  char hash[100];
+  sprintf(hash, "%d", input.src * 13 + input.dst * 17);
+  cms_add(&(midas->current), hash);
+  my_add(&(midas->total), hash, 1.0);
+
+  return ComputeScore(cms_check(&(midas->current), hash),
+                      cms_check_median(&(midas->total), hash), input.ts);
+}
+void midasFree(Midas *midas) {
+  cms_destroy(&(midas->current));
+  cms_destroy(&(midas->total));
+  free(midas);
 }

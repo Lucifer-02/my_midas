@@ -14,8 +14,8 @@ MidasR *midasRInit(int depth, int width, double factor) {
 
   // print error rate and confidence
   printf("MIDAS-R: Depth: %d, Width: %d, Error rate: %f, Confidence: %f\n",
-		 depth, width, midasR->numCurrentEdge.error_rate,
-		 midasR->numCurrentEdge.confidence);
+         depth, width, midasR->numCurrentEdge.error_rate,
+         midasR->numCurrentEdge.confidence);
 
   return midasR;
 }
@@ -41,6 +41,7 @@ double midasROperator(MidasR *midasR, Input input) {
     int width = midasR->numCurrentEdge.width;
     int depth = midasR->numCurrentEdge.depth;
     double factor = midasR->factor;
+
     multipleAll(&(midasR->numCurrentEdge), factor, width, depth);
     multipleAll(&(midasR->numCurrentSource), factor, width, depth);
     multipleAll(&(midasR->numCurrentDestination), factor, width, depth);
@@ -76,4 +77,59 @@ double midasROperator(MidasR *midasR, Input input) {
       ComputeScore(cms_check(&(midasR->numCurrentDestination), hash_dst),
                    cms_check(&(midasR->numTotalDestination), hash_dst),
                    input.ts));
+}
+
+double new_midasROperator(MidasR *midasR, Input input) {
+  if (input.ts > midasR->current_ts) {
+
+    int width = midasR->numCurrentEdge.width;
+    int depth = midasR->numCurrentEdge.depth;
+    double factor = midasR->factor;
+
+    multipleAll(&(midasR->numCurrentEdge), factor, width, depth);
+    multipleAll(&(midasR->numCurrentSource), factor, width, depth);
+    multipleAll(&(midasR->numCurrentDestination), factor, width, depth);
+    midasR->current_ts = input.ts;
+  }
+
+  char hash_src[100], hash_dst[100], hash_edge[100];
+
+  sprintf(hash_edge, "%d", input.src * 17 + input.dst * 13);
+  cms_add(&(midasR->numCurrentEdge), hash_edge);
+  my_add(&(midasR->numTotalEdge), hash_edge, 1.0);
+
+  sprintf(hash_src, "%d", input.src);
+  cms_add(&(midasR->numCurrentSource), hash_src);
+  my_add(&(midasR->numTotalSource), hash_src, 1.0);
+
+  sprintf(hash_dst, "%d", input.dst);
+  cms_add(&(midasR->numCurrentDestination), hash_dst);
+  my_add(&(midasR->numTotalDestination), hash_dst, 1.0);
+
+  /** static int i = 1000; */
+  /** if (i-- > 0) { */
+  /**   printf("Current: %lf, Total: %lf\n", */
+  /**          cms_check(&(midasR->numCurrentEdge), hash_edge), */
+  /**          cms_check(&(midasR->numTotalEdge), hash_edge)); */
+  /** } */
+
+  return max(
+      ComputeScore(cms_check(&(midasR->numCurrentEdge), hash_edge),
+                   cms_check_median(&(midasR->numTotalEdge), hash_edge),
+                   input.ts),
+      ComputeScore(cms_check(&(midasR->numCurrentSource), hash_src),
+                   cms_check_median(&(midasR->numTotalSource), hash_src),
+                   input.ts),
+      ComputeScore(cms_check(&(midasR->numCurrentDestination), hash_dst),
+                   cms_check_median(&(midasR->numTotalDestination), hash_dst),
+                   input.ts));
+}
+void midasRFree(MidasR *midasR) {
+  cms_destroy(&(midasR->numCurrentEdge));
+  cms_destroy(&(midasR->numTotalEdge));
+  cms_destroy(&(midasR->numCurrentSource));
+  cms_destroy(&(midasR->numTotalSource));
+  cms_destroy(&(midasR->numCurrentDestination));
+  cms_destroy(&(midasR->numTotalDestination));
+  free(midasR);
 }

@@ -23,12 +23,11 @@ int main(int argc, char const *argv[]) {
 
   double *const labels = malloc(N * sizeof(double));
   double *const scores = malloc(N * sizeof(double));
-
   read_data(argv[1], src, dst, ts, N); // read truth labels
   read_labels(argv[3], labels, N);
 
-  int widths[] = {1024 * 8};
-  int depth = 4;
+  int widths[] = {1024 * 4};
+  int depth = 2;
   int num_width = sizeof(widths) / sizeof(widths[0]);
 
   // setup time to execute measurement
@@ -37,35 +36,41 @@ int main(int argc, char const *argv[]) {
 
   for (int i = 0; i < num_width; i++) {
 
-    start_time = clock();
-
-    MidasR *midasR = midasRInit(depth, widths[i], 0.9);
-
-    for (int j = 0; j < N; j++) {
-
-      Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]};
-      scores[j] = midasROperator(midasR, input);
-    }
-
-    end_time = clock();
-
-    // get total time
-    total_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
-    printf("Total time: %lf\n", total_time);
-
-    // compute AUROC
-    double const aurocR = AUROC(labels, scores, N);
-    printf("AUROC: %lf\n", aurocR);
+    //---------------------------------------------
+    // Original MIDAS-R
+    /** start_time = clock(); */
+    /**  */
+    /** MidasR *midasR = midasRInit(depth, widths[i], 0.9); */
+    /**  */
+    /** for (int j = 0; j < N; j++) { */
+    /**  */
+    /**   Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]}; */
+    /**   scores[j] = midasROperator(midasR, input); */
+    /** } */
+    /**  */
+    /** end_time = clock(); */
+    /**  */
+    /** // get total time */
+    /** total_time = (double)(end_time - start_time) / CLOCKS_PER_SEC; */
+    /** printf("Total time: %lf\n", total_time); */
+    /**  */
+    /** [> // compute AUROC <] */
+    /** [> double const auroc = calculateAUC(labels, scores, N); <] */
+    /** [> printf("AUROC: %lf\n", auroc); <] */
+    /**  */
+    /** midasRFree(midasR); */
 
     //---------------------------------------------
+    // new MIDAS-R
+
     start_time = clock();
 
-    Midas *midas = midasInit(depth, widths[i]);
+    MidasR *midasR_new = midasRInit(depth, widths[i], 0.5);
 
     for (int j = 0; j < N; j++) {
 
       Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]};
-      scores[j] = midasOperator(midas, input);
+      scores[j] = new_midasROperator(midasR_new, input);
     }
 
     end_time = clock();
@@ -74,18 +79,43 @@ int main(int argc, char const *argv[]) {
     total_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
     printf("Total time: %lf\n", total_time);
 
-    // compute AUROC
-    double const auroc = AUROC(labels, scores, N);
-    printf("AUROC: %lf\n", auroc);
+	// compute AUROC
+	double const auroc = AUROC(labels, scores, N);
+	printf("AUROC: %lf\n", auroc);
+
+    midasRFree(midasR_new);
+
+    //---------------------------------------------
+    /** start_time = clock(); */
+    /**  */
+    /** Midas *midas = midasInit(depth, widths[i]); */
+    /**  */
+    /** for (int j = 0; j < N; j++) { */
+    /**  */
+    /**   Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]}; */
+    /**   scores[j] = new_midasOperator(midas, input); */
+    /** } */
+    /**  */
+    /** end_time = clock(); */
+    /**  */
+    /** // get total time */
+    /** total_time = (double)(end_time - start_time) / CLOCKS_PER_SEC; */
+    /** printf("Total time: %lf\n", total_time); */
+    /**  */
+    /** // compute AUROC */
+    /** double const auroc = AUROC(labels, scores, N); */
+    /** printf("AUROC: %lf\n", auroc); */
+    /**  */
+    /** midasFree(midas); */
   };
 
-  /** FILE *const fscore = fopen("./temp/Score.txt", "w"); */
-  /** for (int i = 0; i < N; i++) { */
-  /**  */
-  /**   // write to file */
-  /**   fprintf(fscore, "%lf\n", scores[i]); */
-  /** }; */
-  /** fclose(fscore); */
+  FILE *const fscore = fopen("./temp/Score.txt", "w");
+  for (int i = 0; i < N; i++) {
+
+    // write to file
+    fprintf(fscore, "%lf\n", scores[i]);
+  };
+  fclose(fscore);
 
   free(labels);
   free(scores);
