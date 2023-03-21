@@ -17,6 +17,7 @@ typedef struct {
 Midas *midasInit(int depth, int width);
 double midasOperator(Midas *midas, Input input);
 double new_midasOperator(Midas *midas, Input input);
+double geo_midasOperator(Midas *midas, Input input);
 void midasFree(Midas *midas);
 
 #endif

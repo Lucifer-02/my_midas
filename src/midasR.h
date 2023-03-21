@@ -17,6 +17,7 @@ typedef struct {
 MidasR *midasRInit(int depth, int width, double factor);
 double midasROperator(MidasR *midasR, Input input);
 double new_midasROperator(MidasR *midasR, Input input);
+double geo_midasROperator(MidasR *midasR, Input input);
 void midasRFree(MidasR *midasR);
 
 #endif

@@ -158,8 +158,9 @@ static __inline__ uint64_t *cms_get_hashes(CountMinSketch *cms,
 }
 
 void multipleAll(CountMinSketch *cms, double by, int width, int depth);
-void my_add(CountMinSketch *cms, const char *key, double x);
 double cms_check_median(CountMinSketch *cms, const char *key);
+void geo_add(CountMinSketch *cms, const char *key, double x, double prob);
+void my_add(CountMinSketch *cms, const char *key, double x, double p);
 
 #ifdef __cplusplus
 } // extern "C"

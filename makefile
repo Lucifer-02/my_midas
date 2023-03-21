@@ -1,6 +1,7 @@
 CC=clang-15
 SRCDIR=src
-COMPFLAGS= -O3 -lm -Wall -Wextra -Wpedantic -Winline -Wno-long-long -fsanitize=address 
+COMPFLAGS = -O3 -lm -lgsl
+COMPFLAGS += -Wall -Wextra -fsanitize=undefined,address
 INPUT_DIR=data
 SCORE=temp/Score.txt
 LIB=src/count_min_sketch.c  src/auroc.c src/midas.c src/midasR.c src/prepare.c
@@ -9,13 +10,13 @@ darpa: INPUT_DIR=data/DARPA/processed
 darpa: run check 
 
 cic2018: INPUT_DIR=data/CIC-IDS2018/processed
-cic2018: run check 
+cic2018: run check
 
 cic2019: INPUT_DIR=data/CIC-DDoS2019/processed
 cic2019: run check
 
 ctu: INPUT_DIR=data/CTU-13/processed
-ctu: run check 
+ctu: run check
 
 iscx: INPUT_DIR=data/ISCX-IDS2012/processed
 iscx: run check
@@ -27,7 +28,8 @@ unsw: run check
 clean:
 	rm -r main
 
-com:
+com: 
+	clear
 	$(CC) main.c $(LIB) -o main $(COMPFLAGS)
 
 run: 
@@ -40,5 +42,5 @@ pre:
 	python3 util/PreprocessData.py
 
 exp:
-	gcc -o test test.c src/count_min_sketch.c -lm; ./test
+	$(CC) -o test test.c src/count_min_sketch.c -lm; ./test
 

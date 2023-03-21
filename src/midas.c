@@ -43,7 +43,22 @@ double new_midasOperator(Midas *midas, Input input) {
   char hash[100];
   sprintf(hash, "%d", input.src * 13 + input.dst * 17);
   cms_add(&(midas->current), hash);
-  my_add(&(midas->total), hash, 1.0);
+  my_add(&(midas->total), hash, 1.0, 0.25);
+
+  return ComputeScore(cms_check(&(midas->current), hash),
+                      cms_check_median(&(midas->total), hash), input.ts);
+}
+
+double geo_midasOperator(Midas *midas, Input input) {
+  if (input.ts > midas->current_ts) {
+    cms_clear(&(midas->current));
+    midas->current_ts = input.ts;
+  }
+
+  char hash[100];
+  sprintf(hash, "%d", input.src * 13 + input.dst * 17);
+  cms_add(&(midas->current), hash);
+  geo_add(&(midas->total), hash, 1.0, 0.25);
 
   return ComputeScore(cms_check(&(midas->current), hash),
                       cms_check_median(&(midas->total), hash), input.ts);

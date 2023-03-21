@@ -6,11 +6,11 @@
 *******************************************************************************/
 
 #include "count_min_sketch.h"
+#include <gsl/gsl_randist.h>
+#include <gsl/gsl_rng.h>
 #include <inttypes.h> /* PRIu64 */
 #include <limits.h>
 #include <math.h>
-#include <stdarg.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -94,7 +94,7 @@ void cms_add_inc(CountMinSketch *cms, const char *key, double x) {
   free(hashes);
 }
 
-void my_add(CountMinSketch *cms, const char *key, double x) {
+void my_add(CountMinSketch *cms, const char *key, double x, double p) {
   // Set the random seed based on the current time
   srand(time(NULL));
 
@@ -108,14 +108,38 @@ void my_add(CountMinSketch *cms, const char *key, double x) {
 
     random_value = min + rand() % (max - min + 1);
 
-    if (random_value < 20) {
+    if (random_value < 100 * p) {
       uint64_t bin = (hashes[i] % cms->width) + (i * cms->width);
-      cms->bins[bin] = cms->bins[bin] + x;
+      cms->bins[bin] = cms->bins[bin] + x / p;
     }
   }
 
   cms->elements_added += x;
   free(hashes);
+}
+
+static int geometric_random_int(double p) {
+  gsl_rng *r =
+      gsl_rng_alloc(gsl_rng_default); // Allocate a random number generator
+  gsl_rng_set(r, time(NULL));         // Seed the generator
+  int rand_num = ceil(gsl_ran_geometric(r, p));
+  gsl_rng_free(r); // Free the generator
+  return rand_num; // Return the number of failures before the first success
+}
+
+static uint32_t row = 0;
+void geo_add(CountMinSketch *cms, const char *key, double x, double prob) {
+
+  /** if (row <= cms->depth) { */
+
+  uint64_t hash = __fnv_1a(key, row);
+  uint64_t bin = (hash % cms->width) + (0 * cms->width);
+  cms->bins[bin] = cms->bins[bin] + x / prob;
+
+  row += geometric_random_int(prob);
+  /** } else { */
+  /**   row -= cms->depth; */
+  /** } */
 }
 
 double cms_check_alt(CountMinSketch *cms, uint64_t *hashes,
@@ -228,7 +252,6 @@ double cms_check_median(CountMinSketch *cms, const char *key) {
   free(hashes);
   return num_add;
 }
-
 uint64_t *cms_get_hashes_alt(CountMinSketch *cms, unsigned int num_hashes,
                              const char *key) {
   return cms->hash_function(num_hashes, key);
