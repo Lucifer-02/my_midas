@@ -71,10 +71,14 @@ int cms_destroy(CountMinSketch *cms) {
 }
 
 int cms_clear(CountMinSketch *cms) {
-  uint32_t i, j = cms->width * cms->depth;
-  for (i = 0; i < j; ++i) {
-    cms->bins[i] = 0;
-  }
+
+  /** uint32_t i, j = cms->width * cms->depth; */
+  /** for (i = 0; i < j; ++i) { */
+  /**   cms->bins[i] = 0; */
+  /** } */
+
+  // set memory to 0
+  memset(cms->bins, 0, cms->width * cms->depth * sizeof(double));
   cms->elements_added = 0;
   return CMS_SUCCESS;
 }
@@ -118,28 +122,33 @@ void my_add(CountMinSketch *cms, const char *key, double x, double p) {
   free(hashes);
 }
 
-static int geometric_random_int(double p) {
-  gsl_rng *r =
-      gsl_rng_alloc(gsl_rng_default); // Allocate a random number generator
-  gsl_rng_set(r, time(NULL));         // Seed the generator
+static int geometric_random_int(double p, gsl_rng *r) {
   int rand_num = ceil(gsl_ran_geometric(r, p));
-  gsl_rng_free(r); // Free the generator
   return rand_num; // Return the number of failures before the first success
 }
 
-static uint32_t row = 0;
-void geo_add(CountMinSketch *cms, const char *key, double x, double prob) {
+void geo_add(CountMinSketch *cms, const char *key, double x, double prob,
+             gsl_rng *r, uint32_t *row) {
 
-  /** if (row <= cms->depth) { */
+  for (unsigned int i = 0; i < cms->depth; ++i) {
+    if (*row < cms->depth) {
 
-  uint64_t hash = __fnv_1a(key, row);
-  uint64_t bin = (hash % cms->width) + (0 * cms->width);
-  cms->bins[bin] = cms->bins[bin] + x / prob;
+      /** printf("Current row: %d\n", *row); */
+      uint64_t hash = __fnv_1a(key, *row);
+      uint64_t bin = (hash % cms->width) + (*row * cms->width);
+      cms->bins[bin] = cms->bins[bin] + x / prob;
 
-  row += geometric_random_int(prob);
-  /** } else { */
-  /**   row -= cms->depth; */
-  /** } */
+      /** *row *= (*row == (cms->depth - 1)); */
+	  int var = geometric_random_int(prob, r);
+      /** int var = 5; */
+      *row += var;
+      /** printf("Next row: %d\n", *row); */
+    } else {
+      *row -= cms->depth;
+      /** printf("reduce row: %d\n", *row); */
+      break;
+    }
+  }
 }
 
 double cms_check_alt(CountMinSketch *cms, uint64_t *hashes,

@@ -79,7 +79,7 @@ double midasROperator(MidasR *midasR, Input input) {
                    input.ts));
 }
 
-double geo_midasROperator(MidasR *midasR, Input input) {
+double geo_midasROperator(MidasR *midasR, Input input, gsl_rng *r) {
   if (input.ts > midasR->current_ts) {
 
     int width = midasR->numCurrentEdge.width;
@@ -96,15 +96,15 @@ double geo_midasROperator(MidasR *midasR, Input input) {
 
   sprintf(hash_edge, "%d", input.src * 17 + input.dst * 13);
   cms_add(&(midasR->numCurrentEdge), hash_edge);
-  geo_add(&(midasR->numTotalEdge), hash_edge, 1.0, 0.25);
+  geo_add(&(midasR->numTotalEdge), hash_edge, 1.0, 0.25, r);
 
   sprintf(hash_src, "%d", input.src);
   cms_add(&(midasR->numCurrentSource), hash_src);
-  geo_add(&(midasR->numTotalSource), hash_src, 1.0, 0.25);
+  geo_add(&(midasR->numTotalSource), hash_src, 1.0, 0.25, r);
 
   sprintf(hash_dst, "%d", input.dst);
   cms_add(&(midasR->numCurrentDestination), hash_dst);
-  geo_add(&(midasR->numTotalDestination), hash_dst, 1.0, 0.25);
+  geo_add(&(midasR->numTotalDestination), hash_dst, 1.0, 0.25, r);
 
   /** static int i = 1000; */
   /** if (i-- > 0) { */

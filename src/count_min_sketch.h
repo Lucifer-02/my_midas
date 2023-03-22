@@ -12,6 +12,7 @@
 extern "C" {
 #endif
 
+#include <gsl/gsl_rng.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -27,9 +28,10 @@ extern "C" {
 /* https://gcc.gnu.org/onlinedocs/gcc/Alternate-Keywords.html#Alternate-Keywords
  */
 #ifndef __GNUC__
-#define __inline__ inline
+#define inline
 #endif
 
+static int count_loop = 0;
 /* hashing function type */
 typedef uint64_t *(*cms_hash_function)(unsigned int num_hashes,
                                        const char *key);
@@ -53,8 +55,8 @@ typedef struct {
    width or depth are 0 */
 int cms_init_alt(CountMinSketch *cms, unsigned int width, unsigned int depth,
                  cms_hash_function hash_function);
-static __inline__ int cms_init(CountMinSketch *cms, unsigned int width,
-                               unsigned int depth) {
+static int cms_init(CountMinSketch *cms, unsigned int width,
+                    unsigned int depth) {
   return cms_init_alt(cms, width, depth, NULL);
 }
 
@@ -68,8 +70,8 @@ static __inline__ int cms_init(CountMinSketch *cms, unsigned int width,
    error_rate or confidence is negative */
 int cms_init_optimal_alt(CountMinSketch *cms, double error_rate,
                          double confidence, cms_hash_function hash_function);
-static __inline__ int cms_init_optimal(CountMinSketch *cms, float error_rate,
-                                       float confidence) {
+static int cms_init_optimal(CountMinSketch *cms, float error_rate,
+                            float confidence) {
   return cms_init_optimal_alt(cms, error_rate, confidence, NULL);
 }
 
@@ -114,10 +116,10 @@ void cms_add_inc(CountMinSketch *cms, const char *key, double x);
 void cms_add_inc_alt(CountMinSketch *cms, uint64_t *hashes, double x);
 
 /* Add the provided key to the count-min sketch */
-static __inline__ void cms_add(CountMinSketch *cms, const char *key) {
+static void cms_add(CountMinSketch *cms, const char *key) {
   cms_add_inc(cms, key, 1.0);
 }
-static __inline__ void cms_add_alt(CountMinSketch *cms, uint64_t *hashes) {
+static void cms_add_alt(CountMinSketch *cms, uint64_t *hashes) {
   cms_add_inc_alt(cms, hashes, 1.0);
 }
 
@@ -125,12 +127,11 @@ static __inline__ void cms_add_alt(CountMinSketch *cms, uint64_t *hashes) {
 double cms_check(CountMinSketch *cms, const char *key);
 double cms_check_alt(CountMinSketch *cms, uint64_t *hashes,
                      unsigned int num_hashes);
-static __inline__ double cms_check_min(CountMinSketch *cms, const char *key) {
+static double cms_check_min(CountMinSketch *cms, const char *key) {
   return cms_check(cms, key);
 }
-static __inline__ int32_t cms_check_min_alt(CountMinSketch *cms,
-                                            uint64_t *hashes,
-                                            unsigned int num_hashes) {
+static int32_t cms_check_min_alt(CountMinSketch *cms, uint64_t *hashes,
+                                 unsigned int num_hashes) {
   return cms_check_alt(cms, hashes, num_hashes);
 }
 
@@ -152,14 +153,14 @@ double cms_check_mean_min_alt(CountMinSketch *cms, uint64_t *hashes,
     NOTE: Up to the caller to free the array of hash values */
 uint64_t *cms_get_hashes_alt(CountMinSketch *cms, unsigned int num_hashes,
                              const char *key);
-static __inline__ uint64_t *cms_get_hashes(CountMinSketch *cms,
-                                           const char *key) {
+static uint64_t *cms_get_hashes(CountMinSketch *cms, const char *key) {
   return cms_get_hashes_alt(cms, cms->depth, key);
 }
 
 void multipleAll(CountMinSketch *cms, double by, int width, int depth);
 double cms_check_median(CountMinSketch *cms, const char *key);
-void geo_add(CountMinSketch *cms, const char *key, double x, double prob);
+void geo_add(CountMinSketch *cms, const char *key, double x, double prob,
+             gsl_rng *r, uint32_t *row);
 void my_add(CountMinSketch *cms, const char *key, double x, double p);
 
 #ifdef __cplusplus

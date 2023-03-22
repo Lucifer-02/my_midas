@@ -1,22 +1,22 @@
-CC=clang-15
+CC=gcc
 SRCDIR=src
-COMPFLAGS = -O3 -lm -lgsl
-COMPFLAGS += -Wall -Wextra -fsanitize=undefined,address
+COMPFLAGS = -lm -lgsl
+# COMPFLAGS += -Wall -Wextra -fsanitize=undefined,address
 INPUT_DIR=data
 SCORE=temp/Score.txt
-LIB=src/count_min_sketch.c  src/auroc.c src/midas.c src/midasR.c src/prepare.c
+LIB=src/count_min_sketch.c  src/auroc.c src/midas.c src/prepare.c
 
 darpa: INPUT_DIR=data/DARPA/processed
-darpa: run check 
+darpa: run 
 
 cic2018: INPUT_DIR=data/CIC-IDS2018/processed
 cic2018: run check
 
 cic2019: INPUT_DIR=data/CIC-DDoS2019/processed
-cic2019: run check
+cic2019: run 
 
 ctu: INPUT_DIR=data/CTU-13/processed
-ctu: run check
+ctu: run 
 
 iscx: INPUT_DIR=data/ISCX-IDS2012/processed
 iscx: run check
