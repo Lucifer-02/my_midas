@@ -54,7 +54,7 @@ int main(int argc, char const *argv[]) {
   read_labels(argv[3], labels, N);
 
   // Init
-  Config const config = {.depth = 1, .width = 1024};
+  Config const config = {.depth = 2, .width = 1024};
   NormalCore *const midas = midasInit(config);
 
   // get input and compute score
@@ -64,17 +64,17 @@ int main(int argc, char const *argv[]) {
     scores[i] = normalOperator(midas, input);
   };
 
-  // compute AUROC
-  double const auroc = AUROC(labels, scores, N);
-  printf("AUROC: %lf\n", auroc);
+  /** // compute AUROC */
+  /** double const auroc = AUROC(labels, scores, N); */
+  /** printf("AUROC: %lf\n", auroc); */
 
-  /** FILE *const fscore = fopen("./temp/Score.txt", "w"); */
-  /** for (int i = 0; i < N; i++) { */
-  /**  */
-  /**   // write to file */
-  /**   fprintf(fscore, "%lf\n", scores[i]); */
-  /** }; */
-  /** fclose(fscore); */
+  FILE *const fscore = fopen("./temp/Score.txt", "w");
+  for (int i = 0; i < N; i++) {
+
+	// write to file
+	fprintf(fscore, "%lf\n", scores[i]);
+  };
+  fclose(fscore);
 
   free(labels);
   free(scores);

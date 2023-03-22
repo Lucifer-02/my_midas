@@ -6,22 +6,22 @@ SCORE=temp/Score.txt
 LIB=src/count_min_sketch.c  src/auroc.c src/normalCore.c
 
 darpa: INPUT_DIR=data/DARPA/processed
-darpa: run 
+darpa: run check 
 
 cic2018: INPUT_DIR=data/CIC-IDS2018/processed
-cic2018: run 
+cic2018: run check
 
 cic2019: INPUT_DIR=data/CIC-DDoS2019/processed
-cic2019: run 
+cic2019: run check
 
 ctu: INPUT_DIR=data/CTU-13/processed
-ctu: run 
+ctu: run check
 
 iscx: INPUT_DIR=data/ISCX-IDS2012/processed
-iscx: run 
+iscx: run check
 
 unsw: INPUT_DIR=data/UNSW-NB15/processed
-unsw: run 
+unsw: run check
 
 
 clean:
