@@ -119,32 +119,11 @@ void cms_add_inc_alt(CountMinSketch *cms, uint64_t *hashes, double x);
 static void cms_add(CountMinSketch *cms, const char *key) {
   cms_add_inc(cms, key, 1.0);
 }
-static void cms_add_alt(CountMinSketch *cms, uint64_t *hashes) {
-  cms_add_inc_alt(cms, hashes, 1.0);
-}
 
 /* Determine the maximum number of times the key may have been inserted */
 double cms_check(CountMinSketch *cms, const char *key);
 double cms_check_alt(CountMinSketch *cms, uint64_t *hashes,
                      unsigned int num_hashes);
-static double cms_check_min(CountMinSketch *cms, const char *key) {
-  return cms_check(cms, key);
-}
-static int32_t cms_check_min_alt(CountMinSketch *cms, uint64_t *hashes,
-                                 unsigned int num_hashes) {
-  return cms_check_alt(cms, hashes, num_hashes);
-}
-
-/*  Determine the mean number of times the key may have been inserted
-    NOTE: Mean check increases the over counting but is a `better` strategy
-    when removes are added and negatives are possible */
-int32_t cms_check_mean(CountMinSketch *cms, const char *key);
-int32_t cms_check_mean_alt(CountMinSketch *cms, uint64_t *hashes,
-                           unsigned int num_hashes);
-
-double cms_check_mean_min(CountMinSketch *cms, const char *key);
-double cms_check_mean_min_alt(CountMinSketch *cms, uint64_t *hashes,
-                              unsigned int num_hashes);
 
 /*  Return the hashes for the provided key based on the hashing function of
     the count-min sketch
@@ -160,7 +139,7 @@ static uint64_t *cms_get_hashes(CountMinSketch *cms, const char *key) {
 void multipleAll(CountMinSketch *cms, double by, int width, int depth);
 double cms_check_median(CountMinSketch *cms, const char *key);
 void geo_add(CountMinSketch *cms, const char *key, double x, double prob,
-             gsl_rng *r, uint32_t *row);
+             gsl_rng *r);
 void my_add(CountMinSketch *cms, const char *key, double x, double p);
 
 #ifdef __cplusplus

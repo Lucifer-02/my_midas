@@ -106,7 +106,7 @@ int main(int argc, char const *argv[]) {
       /** end_time = clock(); */
       /**  */
       /** // get total time */
-      /** total_time = (double)(end_time - start_time) / CLOCKS_PER_SEC; */
+      /** total_time = (double)(end_time - start_time) / CLOCKS_PE_SEC; */
       /** printf("Total time: %lf\n", total_time); */
       /**  */
       /** [> // compute AUROC <] */
@@ -117,25 +117,83 @@ int main(int argc, char const *argv[]) {
 
       //---------------------------------------------
 
-      /** Midas *midas = midasInit(depth, width, 2, 1024); */
-      /** // print error rate and confidence */
-      /** printf("MIDAS : Depth: %d, Width: %d\n", depth, width); */
-      /**  */
-      /** start_time = clock(); */
-      /**  */
+      Midas *midas = midasInit(depth, width, 2, 1024);
+      // print error rate and confidence
+      printf("MIDAS : Depth: %d, Width: %d\n", depth, width);
+
+      start_time = clock();
+
+      for (int j = 0; j < N; j++) {
+
+        Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]};
+        scores[j] = midasOperator(midas, input);
+      }
+
+      end_time = clock();
+
+      // get total time <]
+      total_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+      printf("Total time: %lf\n", total_time);
+
+      midasFree(midas);
+
+      //---------------------------------------------
+
+      gsl_rng *r = gsl_rng_alloc(gsl_rng_default); // Allocate a random
+      gsl_rng_set(r, time(NULL));                  // Seed the generator
+
+      Midas *midas_geo = midasInit(depth, width, 2, 1024);
+
+      // print error rate and confidence
+      printf("MIDAS : Depth: %d, Width: %d\n", depth, width);
+
+      start_time = clock();
+
+      for (int j = 0; j < N; j++) {
+
+        Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]};
+        scores[j] = geo_midasOperator(midas_geo, input, r);
+      }
+
+      end_time = clock();
+
+      // get total time
+      total_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+      printf("Total time: %lf\n", total_time);
+
+      gsl_rng_free(r); // Free the generator
+      midasFree(midas_geo);
+
+      //---------------------------------------------
+
+      Midas *midas1 = midasInit(depth, width, 2, 1024);
+      // print error rate and confidence
+      printf("MIDAS : Depth: %d, Width: %d\n", depth, width);
+
+      start_time = clock();
+
+      for (int j = 0; j < N; j++) {
+
+        Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]};
+        scores[j] = midasOperator(midas1, input);
+      }
+
+      end_time = clock();
+
+      // get total time <]
+      total_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+      printf("Total time: %lf\n", total_time);
+
+      midasFree(midas1);
+
+      //---------------------------------------------
+
+      /** Midas *midas1 = midasInit(depth, width, 2, 1024); */
       /** for (int j = 0; j < N; j++) { */
       /**  */
       /**   Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]}; */
-      /**   scores[j] = midasOperator(midas, input); */
+      /**   scores[j] = midasOperator(midas1, input); */
       /** } */
-      /**  */
-      /** end_time = clock(); */
-      /**  */
-      /** // get total time <] */
-      /** total_time = (double)(end_time - start_time) / CLOCKS_PER_SEC; */
-      /** printf("Total time: %lf\n", total_time); */
-      /**  */
-      /** midasFree(midas); */
 
       //---------------------------------------------
 
@@ -145,70 +203,11 @@ int main(int argc, char const *argv[]) {
       /**  */
       /** Midas *midas_geo = midasInit(depth, width, 2, 1024); */
       /**  */
-      /** // print error rate and confidence */
-      /** printf("MIDAS : Depth: %d, Width: %d\n", depth, width); */
-      /**  */
-      /** start_time = clock(); */
-      /**  */
       /** for (int j = 0; j < N; j++) { */
       /**  */
       /**   Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]}; */
       /**   scores[j] = geo_midasOperator(midas_geo, input, r); */
       /** } */
-      /**  */
-      /** end_time = clock(); */
-      /**  */
-      /** // get total time */
-      /** total_time = (double)(end_time - start_time) / CLOCKS_PER_SEC; */
-      /** printf("Total time: %lf\n", total_time); */
-      /**  */
-      /** gsl_rng_free(r); // Free the generator */
-      /** midasFree(midas_geo); */
-
-      //---------------------------------------------
-
-      /** Midas *midas1 = midasInit(depth, width, 2, 1024); */
-      /** // print error rate and confidence */
-      /** printf("MIDAS : Depth: %d, Width: %d\n", depth, width); */
-      /**  */
-      /** start_time = clock(); */
-      /**  */
-      /** for (int j = 0; j < N; j++) { */
-      /**  */
-      /**   Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]}; */
-      /**   scores[j] = midasOperator(midas1, input); */
-      /** } */
-      /**  */
-      /** end_time = clock(); */
-      /**  */
-      /** // get total time <] */
-      /** total_time = (double)(end_time - start_time) / CLOCKS_PER_SEC; */
-      /** printf("Total time: %lf\n", total_time); */
-      /**  */
-      /** midasFree(midas1); */
-
-      //---------------------------------------------
-
-      /** Midas *midas1 = midasInit(depth, width, 2, 1024); */
-      /** for (int j = 0; j < N; j++) { */
-      /**  */
-      /**   Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]}; */
-      /**   scores[j] = midasOperator(midas1, input); */
-      /** } */
-
-      //---------------------------------------------
-
-      gsl_rng *r = gsl_rng_alloc(gsl_rng_default); // Allocate a random number
-      gsl_rng_set(r, time(NULL));                  // Seed the generator
-
-      Midas *midas_geo = midasInit(depth, width, 2, 1024);
-
-      uint32_t row = 0;
-      for (int j = 0; j < N; j++) {
-
-        Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]};
-        scores[j] = geo_midasOperator(midas_geo, input, r, &row);
-      }
     }
   };
 

@@ -122,29 +122,25 @@ void my_add(CountMinSketch *cms, const char *key, double x, double p) {
   free(hashes);
 }
 
-static int geometric_random_int(double p, gsl_rng *r) {
-  int rand_num = ceil(gsl_ran_geometric(r, p));
-  return rand_num; // Return the number of failures before the first success
-}
-
+static uint32_t row = 0;
 void geo_add(CountMinSketch *cms, const char *key, double x, double prob,
-             gsl_rng *r, uint32_t *row) {
+             gsl_rng *r) {
 
   for (unsigned int i = 0; i < cms->depth; ++i) {
-    if (*row < cms->depth) {
+    if (row < cms->depth) {
 
-      /** printf("Current row: %d\n", *row); */
-      uint64_t hash = __fnv_1a(key, *row);
-      uint64_t bin = (hash % cms->width) + (*row * cms->width);
+      /** printf("Current row: %d\n", row); */
+      uint64_t hash = __fnv_1a(key, row);
+      uint64_t bin = (hash % cms->width) + (row * cms->width);
       cms->bins[bin] = cms->bins[bin] + x / prob;
 
-      /** *row *= (*row == (cms->depth - 1)); */
-	  int var = geometric_random_int(prob, r);
+      row = (row == (cms->depth - 1) ? 0 : row);
+      uint32_t var = gsl_ran_geometric(r, prob);
       /** int var = 5; */
-      *row += var;
+      row += var;
       /** printf("Next row: %d\n", *row); */
     } else {
-      *row -= cms->depth;
+      row -= cms->depth;
       /** printf("reduce row: %d\n", *row); */
       break;
     }

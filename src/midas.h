@@ -18,7 +18,7 @@ Midas *midasInit(int total_depth, int total_width, int current_depth,
                  int current_width);
 double midasOperator(Midas *midas, Input input);
 double new_midasOperator(Midas *midas, Input input);
-double geo_midasOperator(Midas *midas, Input input, gsl_rng *r, uint32_t *row);
+double geo_midasOperator(Midas *midas, Input input, gsl_rng *r);
 void midasFree(Midas *midas);
 
 #endif

@@ -19,38 +19,38 @@ Midas *midasInit(int total_depth, int total_width, int current_depth,
 
 double midasOperator(Midas *midas, Input input) {
 
-  /** if (input.ts > midas->current_ts) { */
-  /**   cms_clear(&(midas->current)); */
-  /**   midas->current_ts = input.ts; */
-  /** } */
+  if (input.ts > midas->current_ts) {
+    cms_clear(&(midas->current));
+    midas->current_ts = input.ts;
+  }
 
   char key[32];
   sprintf(key, "%d", input.src * 13 + input.dst * 17);
-  /** cms_add(&(midas->current), key); */
+  cms_add(&(midas->current), key);
   cms_add(&(midas->total), key);
 
-  /** return ComputeScore(cms_check(&(midas->current), key), */
-  /**                     cms_check(&(midas->total), key), input.ts); */
+  return ComputeScore(cms_check(&(midas->current), key),
+                      cms_check(&(midas->total), key), input.ts);
 
   return 1;
 }
 
-double geo_midasOperator(Midas *midas, Input input, gsl_rng *r, uint32_t *row) {
+double geo_midasOperator(Midas *midas, Input input, gsl_rng *r) {
 
-  /** if (input.ts > midas->current_ts) { */
-  /**   cms_clear(&(midas->current)); */
-  /**   midas->current_ts = input.ts; */
-  /** } */
+  if (input.ts > midas->current_ts) {
+    cms_clear(&(midas->current));
+    midas->current_ts = input.ts;
+  }
 
   char key[32];
   sprintf(key, "%d", input.src * 13 + input.dst * 17);
-  /** cms_add(&(midas->current), key); */
-  geo_add(&(midas->total), key, 1.0, 0.5, r, row);
+  cms_add(&(midas->current), key);
+  geo_add(&(midas->total), key, 1.0, 0.25, r);
 
-  /** return ComputeScore(cms_check(&(midas->current), key), */
-  /**                     cms_check_median(&(midas->total), key), input.ts); */
+  return ComputeScore(cms_check(&(midas->current), key),
+                      cms_check_median(&(midas->total), key), input.ts);
 
-  return 1;
+  /** return 1; */
 }
 
 double new_midasOperator(Midas *midas, Input input) {
