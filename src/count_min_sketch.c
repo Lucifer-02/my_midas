@@ -208,7 +208,7 @@ double cms_check_mean_min_alt(CountMinSketch *cms, uint64_t *hashes,
     mean_min_values[i] = val - ((cms->elements_added - val) / (cms->width - 1));
   }
   // return the median of the mean_min_value array... need to sort first
-  qsort(mean_min_values, cms->depth, sizeof(int64_t), __compare);
+  qsort(mean_min_values, cms->depth, sizeof(double), __compare);
   int32_t n = cms->depth;
   if (n % 2 == 0) {
     num_add = (mean_min_values[n / 2] + mean_min_values[n / 2 - 1]) / 2;
@@ -240,7 +240,7 @@ static double cms_check_median_alt(CountMinSketch *cms, uint64_t *hashes,
     median_values[i] = cms->bins[bin];
   }
   // return the median of the median_values array... need to sort first
-  qsort(median_values, cms->depth, sizeof(int64_t), __double_compare);
+  qsort(median_values, cms->depth, sizeof(double), __double_compare);
   int32_t n = cms->depth;
   if (n % 2 == 0) {
     num_add = (median_values[n / 2] + median_values[n / 2 - 1]) / 2;
