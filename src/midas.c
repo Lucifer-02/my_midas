@@ -17,6 +17,16 @@ Midas *midasInit(int total_depth, int total_width, int current_depth,
   return midas;
 }
 
+Midas *nitro_midasInit(int total_depth, int total_width, int current_depth,
+                       int current_width, gsl_rng *r) {
+  Midas *midas = malloc(sizeof(Midas));
+  ns_init(&(midas->n_total), total_width, total_depth, r);
+  cms_init(&(midas->current), current_width, current_depth);
+  midas->current_ts = 1;
+
+  return midas;
+}
+
 double midasOperator(Midas *midas, Input input) {
 
   if (input.ts > midas->current_ts) {
@@ -49,6 +59,24 @@ double geo_midasOperator(Midas *midas, Input input, gsl_rng *r) {
 
   return ComputeScore(cms_check(&(midas->current), key),
                       cms_check_median(&(midas->total), key), input.ts);
+
+  /** return 1; */
+}
+
+double nitro_midasOperator(Midas *midas, Input input) {
+
+  if (input.ts > midas->current_ts) {
+    cms_clear(&(midas->current));
+    midas->current_ts = input.ts;
+  }
+
+  char key[32];
+  sprintf(key, "%d", input.src * 13 + input.dst * 17);
+  cms_add(&(midas->current), key);
+  ns_add(&(midas->n_total), key, 1.0, 0.125);
+
+  return ComputeScore(cms_check(&(midas->current), key),
+                      ns_check_median(&(midas->n_total), key), input.ts);
 
   /** return 1; */
 }

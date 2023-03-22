@@ -4,7 +4,7 @@ COMPFLAGS = -lm -lgsl
 # COMPFLAGS += -Wall -Wextra -fsanitize=undefined,address
 INPUT_DIR=data
 SCORE=temp/Score.txt
-LIB=src/count_min_sketch.c  src/auroc.c src/midas.c src/prepare.c
+LIB=src/count_min_sketch.c  src/auroc.c src/midas.c src/prepare.c src/midasR.c
 
 darpa: INPUT_DIR=data/DARPA/processed
 darpa: run check

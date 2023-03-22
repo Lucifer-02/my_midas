@@ -22,6 +22,9 @@
 static int __setup_cms(CountMinSketch *cms, uint32_t width, uint32_t depth,
                        double error_rate, double confidence,
                        cms_hash_function hash_function);
+static int __setup_ns(NitroSketch *ns, uint32_t width, uint32_t depth,
+                      double error_rate, double confidence,
+                      ns_hash_function hash_function, gsl_rng *r);
 static uint64_t *__default_hash(unsigned int num_hashes, const char *key);
 static uint64_t __fnv_1a(const char *key, int seed);
 static int __compare(const void *a, const void *b);
@@ -45,6 +48,18 @@ int cms_init_optimal_alt(CountMinSketch *cms, double error_rate,
   return __setup_cms(cms, width, depth, error_rate, confidence, hash_function);
 }
 
+int ns_init_optimal_alt(NitroSketch *ns, double error_rate, double confidence,
+                        ns_hash_function hash_function, gsl_rng *r) {
+  if (error_rate < 0 || confidence < 0) {
+    fprintf(stderr, "Unable to initialize the count-min sketch since both "
+                    "error_rate and confidence must be positive!\n");
+    return CMS_ERROR;
+  }
+  uint32_t width = ceil(2 / error_rate);
+  uint32_t depth = ceil((-1 * log(1 - confidence)) / LOG_TWO);
+  return __setup_ns(ns, width, depth, error_rate, confidence, hash_function, r);
+}
+
 int cms_init_alt(CountMinSketch *cms, uint32_t width, uint32_t depth,
                  cms_hash_function hash_function) {
   if (depth < 1 || width < 1) {
@@ -55,6 +70,18 @@ int cms_init_alt(CountMinSketch *cms, uint32_t width, uint32_t depth,
   double confidence = 1 - (1 / pow(2, depth));
   double error_rate = 2 / (double)width;
   return __setup_cms(cms, width, depth, error_rate, confidence, hash_function);
+}
+
+int ns_init_alt(NitroSketch *ns, uint32_t width, uint32_t depth,
+                ns_hash_function hash_function, gsl_rng *r) {
+  if (depth < 1 || width < 1) {
+    fprintf(stderr, "Unable to initialize the count-min sketch since either "
+                    "width or depth is 0!\n");
+    return CMS_ERROR;
+  }
+  double confidence = 1 - (1 / pow(2, depth));
+  double error_rate = 2 / (double)width;
+  return __setup_ns(ns, width, depth, error_rate, confidence, hash_function, r);
 }
 
 int cms_destroy(CountMinSketch *cms) {
@@ -70,6 +97,21 @@ int cms_destroy(CountMinSketch *cms) {
   return CMS_SUCCESS;
 }
 
+int ns_destroy(NitroSketch *nts) {
+  free(nts->bins);
+  nts->width = 0;
+  nts->depth = 0;
+  nts->confidence = 0.0;
+  nts->error_rate = 0.0;
+  nts->elements_added = 0;
+  nts->hash_function = NULL;
+  nts->bins = NULL;
+  nts->r = NULL;
+  nts->row = 0;
+
+  return CMS_SUCCESS;
+}
+
 int cms_clear(CountMinSketch *cms) {
 
   /** uint32_t i, j = cms->width * cms->depth; */
@@ -80,6 +122,20 @@ int cms_clear(CountMinSketch *cms) {
   // set memory to 0
   memset(cms->bins, 0, cms->width * cms->depth * sizeof(double));
   cms->elements_added = 0;
+  return CMS_SUCCESS;
+}
+
+int ns_clear(NitroSketch *nts) {
+
+  /** uint32_t i, j = cms->width * cms->depth; */
+  /** for (i = 0; i < j; ++i) { */
+  /**   cms->bins[i] = 0; */
+  /** } */
+
+  // set memory to 0
+  memset(nts->bins, 0, nts->width * nts->depth * sizeof(double));
+  nts->elements_added = 0;
+
   return CMS_SUCCESS;
 }
 
@@ -147,6 +203,31 @@ void geo_add(CountMinSketch *cms, const char *key, double x, double prob,
   }
 }
 
+void ns_add(NitroSketch *nts, const char *key, double x, double prob) {
+
+  for (unsigned int i = 0; i < nts->depth; ++i) {
+
+    if (nts->row < nts->depth) {
+
+      /** printf("Current row: %d\n", row); */
+      uint64_t hash = __fnv_1a(key, nts->row);
+      uint64_t bin = (hash % nts->width) + (nts->row * nts->width);
+
+      nts->bins[bin] = nts->bins[bin] + x / prob;
+
+      nts->row = (nts->row == (nts->depth - 1) ? 0 : nts->row);
+      uint32_t var = gsl_ran_geometric(nts->r, prob);
+
+      nts->row += var;
+      /** printf("Next row: %d\n", *row); */
+    } else {
+      nts->row -= nts->depth;
+      /** printf("reduce row: %d\n", *row); */
+      break;
+    }
+  }
+}
+
 double cms_check_alt(CountMinSketch *cms, uint64_t *hashes,
                      unsigned int num_hashes) {
   if (num_hashes < cms->depth) {
@@ -171,14 +252,14 @@ double cms_check(CountMinSketch *cms, const char *key) {
   return num_add;
 }
 
-int32_t cms_check_mean_alt(CountMinSketch *cms, uint64_t *hashes,
-                           unsigned int num_hashes) {
+double cms_check_mean_alt(CountMinSketch *cms, uint64_t *hashes,
+                          unsigned int num_hashes) {
   if (num_hashes < cms->depth) {
     fprintf(stderr, "Insufficient hashes to complete the mean lookup of the "
                     "element to the count-min sketch!");
     return CMS_ERROR;
   }
-  int32_t num_add = 0;
+  double num_add = 0;
   for (unsigned int i = 0; i < cms->depth; ++i) {
     uint32_t bin = (hashes[i] % cms->width) + (i * cms->width);
     num_add += cms->bins[bin];
@@ -186,9 +267,31 @@ int32_t cms_check_mean_alt(CountMinSketch *cms, uint64_t *hashes,
   return num_add / cms->depth;
 }
 
-int32_t cms_check_mean(CountMinSketch *cms, const char *key) {
+double ns_check_mean_alt(NitroSketch *ns, uint64_t *hashes,
+                         unsigned int num_hashes) {
+  if (num_hashes < ns->depth) {
+    fprintf(stderr, "Insufficient hashes to complete the mean lookup of the "
+                    "element to the count-min sketch!");
+    return CMS_ERROR;
+  }
+  double num_add = 0;
+  for (unsigned int i = 0; i < ns->depth; ++i) {
+    uint32_t bin = (hashes[i] % ns->width) + (i * ns->width);
+    num_add += ns->bins[bin];
+  }
+  return num_add / ns->depth;
+}
+
+double cms_check_mean(CountMinSketch *cms, const char *key) {
   uint64_t *hashes = cms_get_hashes(cms, key);
-  int32_t num_add = cms_check_mean_alt(cms, hashes, cms->depth);
+  double num_add = cms_check_mean_alt(cms, hashes, cms->depth);
+  free(hashes);
+  return num_add;
+}
+
+double ns_check_mean(NitroSketch *ns, const char *key) {
+  uint64_t *hashes = ns_get_hashes(ns, key);
+  double num_add = ns_check_mean_alt(ns, hashes, ns->depth);
   free(hashes);
   return num_add;
 }
@@ -251,15 +354,53 @@ static double cms_check_median_alt(CountMinSketch *cms, uint64_t *hashes,
   return num_add;
 }
 
+static double ns_check_median_alt(NitroSketch *ns, uint64_t *hashes,
+                                  unsigned int num_hashes) {
+  if (num_hashes < ns->depth) {
+    fprintf(stderr, "Insufficient hashes to complete the median lookup of the "
+                    "element to the count-min sketch!");
+    return CMS_ERROR;
+  }
+  double num_add = 0;
+  double *median_values = (double *)calloc(ns->depth, sizeof(double));
+  for (unsigned int i = 0; i < ns->depth; ++i) {
+    uint32_t bin = (hashes[i] % ns->width) + (i * ns->width);
+    median_values[i] = ns->bins[bin];
+  }
+  // return the median of the median_values array... need to sort first
+  qsort(median_values, ns->depth, sizeof(double), __double_compare);
+  int32_t n = ns->depth;
+  if (n % 2 == 0) {
+    num_add = (median_values[n / 2] + median_values[n / 2 - 1]) / 2;
+  } else {
+    num_add = median_values[n / 2];
+  }
+  free(median_values);
+  return num_add;
+}
+
 double cms_check_median(CountMinSketch *cms, const char *key) {
   uint64_t *hashes = cms_get_hashes(cms, key);
   double num_add = cms_check_median_alt(cms, hashes, cms->depth);
   free(hashes);
   return num_add;
 }
+
+double ns_check_median(NitroSketch *ns, const char *key) {
+  uint64_t *hashes = ns_get_hashes(ns, key);
+  double num_add = ns_check_median_alt(ns, hashes, ns->depth);
+  free(hashes);
+  return num_add;
+}
+
 uint64_t *cms_get_hashes_alt(CountMinSketch *cms, unsigned int num_hashes,
                              const char *key) {
   return cms->hash_function(num_hashes, key);
+}
+
+uint64_t *ns_get_hashes_alt(NitroSketch *ns, unsigned int num_hashes,
+                            const char *key) {
+  return ns->hash_function(num_hashes, key);
 }
 
 void multipleAll(CountMinSketch *cms, double by, int width, int depth) {
@@ -286,7 +427,28 @@ static int __setup_cms(CountMinSketch *cms, unsigned int width,
 
   if (NULL == cms->bins) {
     fprintf(stderr, "Failed to allocate %zu bytes for bins!",
-            ((width * depth) * sizeof(int32_t)));
+            ((width * depth) * sizeof(double)));
+    return CMS_ERROR;
+  }
+  return CMS_SUCCESS;
+}
+
+static int __setup_ns(NitroSketch *ns, unsigned int width, unsigned int depth,
+                      double error_rate, double confidence,
+                      cms_hash_function hash_function, gsl_rng *r) {
+  ns->width = width;
+  ns->depth = depth;
+  ns->confidence = confidence;
+  ns->error_rate = error_rate;
+  ns->elements_added = 0;
+  ns->row = 0;
+  ns->bins = (double *)calloc((width * depth), sizeof(double));
+  ns->hash_function = (hash_function == NULL) ? __default_hash : hash_function;
+  ns->r = r;
+
+  if (NULL == ns->bins) {
+    fprintf(stderr, "Failed to allocate %zu bytes for bins!",
+            ((width * depth) * sizeof(double)));
     return CMS_ERROR;
   }
   return CMS_SUCCESS;
