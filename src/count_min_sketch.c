@@ -1,17 +1,9 @@
-/*******************************************************************************
-***     Author: Tyler Barrus
-***     email:  barrust@gmail.com
-***     Version: 0.2.0
-***     License: MIT 2017
-*******************************************************************************/
-
 #include "count_min_sketch.h"
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_rng.h>
 #include <inttypes.h> /* PRIu64 */
 #include <limits.h>
 #include <math.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -154,6 +146,11 @@ void cms_add_inc(CountMinSketch *cms, const char *key, double x) {
   free(hashes);
 }
 
+void cms_add_inc_fast(CountMinSketch *cms, const char *key, double x) {
+  uint64_t *hashes = cms_get_hashes_fast(cms, key);
+  cms_add_inc_alt(cms, hashes, x);
+}
+
 void my_add(CountMinSketch *cms, const char *key, double x, double p) {
   // Set the random seed based on the current time
   srand(time(NULL));
@@ -252,6 +249,12 @@ double cms_check(CountMinSketch *cms, const char *key) {
   return num_add;
 }
 
+double cms_check_fast(CountMinSketch *cms, const char *key) {
+  uint64_t *hashes = cms_get_hashes_fast(cms, key);
+  double num_add = cms_check_alt(cms, hashes, cms->depth);
+  return num_add;
+}
+
 double cms_check_mean_alt(CountMinSketch *cms, uint64_t *hashes,
                           unsigned int num_hashes) {
   if (num_hashes < cms->depth) {
@@ -293,6 +296,12 @@ double ns_check_mean(NitroSketch *ns, const char *key) {
   uint64_t *hashes = ns_get_hashes(ns, key);
   double num_add = ns_check_mean_alt(ns, hashes, ns->depth);
   free(hashes);
+  return num_add;
+}
+
+double ns_check_mean_fast(NitroSketch *ns, const char *key) {
+  uint64_t *hashes = ns_get_hashes_fast(ns, key);
+  double num_add = ns_check_mean_alt(ns, hashes, ns->depth);
   return num_add;
 }
 
@@ -403,6 +412,22 @@ uint64_t *ns_get_hashes_alt(NitroSketch *ns, unsigned int num_hashes,
   return ns->hash_function(num_hashes, key);
 }
 
+uint64_t *ns_get_hashes_fast(NitroSketch *ns, const char *key) {
+
+  for (unsigned int i = 0; i < ns->depth; ++i) {
+    ns->hashes[i] = __fnv_1a(key, i);
+  }
+  return ns->hashes;
+}
+
+uint64_t *cms_get_hashes_fast(CountMinSketch *cms, const char *key) {
+
+  for (unsigned int i = 0; i < cms->depth; ++i) {
+    cms->hashes[i] = __fnv_1a(key, i);
+  }
+  return cms->hashes;
+}
+
 void multipleAll(CountMinSketch *cms, double by, int width, int depth) {
   for (int i = 0; i < depth; i++) {
     for (int j = 0; j < width; j++) {
@@ -424,6 +449,7 @@ static int __setup_cms(CountMinSketch *cms, unsigned int width,
   cms->elements_added = 0;
   cms->bins = (double *)calloc((width * depth), sizeof(double));
   cms->hash_function = (hash_function == NULL) ? __default_hash : hash_function;
+  cms->hashes = (uint64_t *)calloc(depth, sizeof(uint64_t));
 
   if (NULL == cms->bins) {
     fprintf(stderr, "Failed to allocate %zu bytes for bins!",
@@ -445,6 +471,7 @@ static int __setup_ns(NitroSketch *ns, unsigned int width, unsigned int depth,
   ns->bins = (double *)calloc((width * depth), sizeof(double));
   ns->hash_function = (hash_function == NULL) ? __default_hash : hash_function;
   ns->r = r;
+  ns->hashes = (uint64_t *)calloc(depth, sizeof(uint64_t));
 
   if (NULL == ns->bins) {
     fprintf(stderr, "Failed to allocate %zu bytes for bins!",

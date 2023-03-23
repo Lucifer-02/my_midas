@@ -27,8 +27,7 @@ extern "C" {
 /* hashing function type */
 typedef uint64_t *(*cms_hash_function)(unsigned int num_hashes,
                                        const char *key);
-typedef uint64_t *(*ns_hash_function)(unsigned int num_hashes,
-                                       const char *key);
+typedef uint64_t *(*ns_hash_function)(unsigned int num_hashes, const char *key);
 
 typedef struct {
   uint32_t depth;
@@ -38,6 +37,7 @@ typedef struct {
   double error_rate;
   cms_hash_function hash_function;
   double *bins;
+  uint64_t *hashes;
 } CountMinSketch, count_min_sketch;
 
 typedef struct {
@@ -50,6 +50,7 @@ typedef struct {
   double *bins;
   uint32_t row;
   gsl_rng *r;
+  uint64_t *hashes;
 } NitroSketch;
 
 /*  Initialize the count-min sketch based on user defined width and depth
@@ -67,9 +68,9 @@ static __inline__ int cms_init(CountMinSketch *cms, unsigned int width,
 }
 
 int ns_init_alt(NitroSketch *nts, unsigned int width, unsigned int depth,
-                 cms_hash_function hash_function, gsl_rng *r);
+                cms_hash_function hash_function, gsl_rng *r);
 static __inline__ int ns_init(NitroSketch *nts, unsigned int width,
-                               unsigned int depth, gsl_rng *r) {
+                              unsigned int depth, gsl_rng *r) {
   return ns_init_alt(nts, width, depth, NULL, r);
 }
 /*  Initialize the count-min sketch based on user defined error rate and
@@ -119,10 +120,15 @@ int cms_clear(CountMinSketch *cms);
 /* Add the provided key to the count-min sketch `x` times */
 void cms_add_inc(CountMinSketch *cms, const char *key, double x);
 void cms_add_inc_alt(CountMinSketch *cms, uint64_t *hashes, double x);
+void cms_add_inc_fast(CountMinSketch *cms, const char *key, double x);
 
 /* Add the provided key to the count-min sketch */
 static __inline__ void cms_add(CountMinSketch *cms, const char *key) {
   cms_add_inc(cms, key, 1.0);
+}
+
+static __inline__ void cms_add_fast(CountMinSketch *cms, const char *key) {
+  cms_add_inc_fast(cms, key, 1.0);
 }
 
 void ns_add(NitroSketch *nts, const char *key, double x, double prob);
@@ -131,6 +137,7 @@ void ns_add(NitroSketch *nts, const char *key, double x, double prob);
 double cms_check(CountMinSketch *cms, const char *key);
 double cms_check_alt(CountMinSketch *cms, uint64_t *hashes,
                      unsigned int num_hashes);
+double cms_check_fast(CountMinSketch *cms, const char *key);
 
 /*  Return the hashes for the provided key based on the hashing function of
     the count-min sketch
@@ -140,7 +147,7 @@ double cms_check_alt(CountMinSketch *cms, uint64_t *hashes,
 uint64_t *cms_get_hashes_alt(CountMinSketch *cms, unsigned int num_hashes,
                              const char *key);
 uint64_t *ns_get_hashes_alt(NitroSketch *nts, unsigned int num_hashes,
-                             const char *key);
+                            const char *key);
 static __inline__ uint64_t *cms_get_hashes(CountMinSketch *cms,
                                            const char *key) {
   return cms_get_hashes_alt(cms, cms->depth, key);
@@ -164,6 +171,9 @@ double cms_check_mean(CountMinSketch *cms, const char *key);
 double cms_check_mean_alt(CountMinSketch *cms, uint64_t *hashes,
                           unsigned int num_hashes);
 double ns_check_mean(NitroSketch *ns, const char *key);
+uint64_t *ns_get_hashes_fast(NitroSketch *ns, const char *key);
+uint64_t *cms_get_hashes_fast(CountMinSketch *cms, const char *key);
+double ns_check_mean_fast(NitroSketch *ns, const char *key);
 
 #ifdef __cplusplus
 } // extern "C"
