@@ -7,13 +7,13 @@ SCORE=temp/Score.txt
 LIB=src/count_min_sketch.c  src/auroc.c src/midas.c src/prepare.c src/midasR.c
 
 darpa: INPUT_DIR=data/DARPA/processed
-darpa: run check
+darpa: run check 
 
 cic2018: INPUT_DIR=data/CIC-IDS2018/processed
 cic2018: run check
 
 cic2019: INPUT_DIR=data/CIC-DDoS2019/processed
-cic2019: run check 
+cic2019: run check
 
 ctu: INPUT_DIR=data/CTU-13/processed
 ctu: run check
@@ -43,4 +43,12 @@ pre:
 
 exp:
 	$(CC) -o test test.c src/count_min_sketch.c -lm; ./test
+
+perf:
+	rm -rf midas.svg out.folded out.perf perf.data 
+	sudo perf record -F 99 -a -g ./main data/CIC-DDoS2019/processed/Data.csv data/CIC-DDoS2019/processed/Meta.txt data/CIC-DDoS2019/processed/Label.csv
+	sudo perf script > out.perf
+	../FlameGraph/stackcollapse-perf.pl out.perf > out.folded
+	../FlameGraph/flamegraph.pl out.folded > midas.svg
+	open midas.svg
 
