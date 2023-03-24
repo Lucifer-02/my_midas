@@ -55,7 +55,7 @@ double geo_midasOperator(Midas *midas, Input input, gsl_rng *r) {
   char key[32];
   sprintf(key, "%d", input.src * 13 + input.dst * 17);
   cms_add(&(midas->current), key);
-  geo_add(&(midas->total), key, 1.0, 0.125, r);
+  geo_add(&(midas->total), key, 1.0, 0.5, r);
 
   return ComputeScore(cms_check(&(midas->current), key),
                       cms_check_median(&(midas->total), key), input.ts);
@@ -75,8 +75,8 @@ double nitro_midasOperator(Midas *midas, Input input) {
   cms_add(&(midas->current), key);
   ns_add(&(midas->n_total), key, 1.0, 0.25);
 
-  return ComputeScore(cms_check(&(midas->current), key),
-                      ns_check_median(&(midas->n_total), key), input.ts);
+  return ComputeScore(cms_check_fast(&(midas->current), key),
+                      ns_check_mean_fast(&(midas->n_total), key), input.ts);
 
   /** return 1; */
 }
@@ -91,7 +91,7 @@ double new_midasOperator(Midas *midas, Input input) {
   char hash[32];
   sprintf(hash, "%d", input.src * 13 + input.dst * 17);
   cms_add(&(midas->current), hash);
-  my_add(&(midas->total), hash, 0.25, 0.25);
+  my_add(&(midas->total), hash, 0.25, 1.0);
 
   return ComputeScore(cms_check(&(midas->current), hash),
                       cms_check_median(&(midas->total), hash), input.ts);

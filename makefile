@@ -1,6 +1,6 @@
 CC=gcc
 SRCDIR=src
-COMPFLAGS = -lm -lgsl
+COMPFLAGS = -g -lm -lgsl
 # COMPFLAGS += -Wall -Wextra -fsanitize=undefined,address
 INPUT_DIR=data
 SCORE=temp/Score.txt
@@ -44,4 +44,12 @@ pre:
 
 exp:
 	$(CC) -o test test.c src/count_min_sketch.c -lm; ./test
+
+perf:
+	rm -rf midas.svg out.folded out.perf perf.data 
+	sudo perf record -F 99 -a -g ./main data/CIC-DDoS2019/processed/Data.csv data/CIC-DDoS2019/processed/Meta.txt data/CIC-DDoS2019/processed/Label.csv
+	sudo perf script > out.perf
+	../FlameGraph/stackcollapse-perf.pl out.perf > out.folded
+	../FlameGraph/flamegraph.pl out.folded > midas.svg
+	open midas.svg
 

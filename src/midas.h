@@ -9,11 +9,8 @@
 #include <stdlib.h>
 
 typedef struct {
-  union {
-    CountMinSketch current;
-    NitroSketch n_current;
-  };
 
+  CountMinSketch current;
   union {
     CountMinSketch total;
     NitroSketch n_total;
