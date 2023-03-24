@@ -47,7 +47,7 @@ exp:
 
 perf:
 	rm -rf midas.svg out.folded out.perf perf.data 
-	sudo perf record -F 99 -a -g ./main data/CIC-DDoS2019/processed/Data.csv data/CIC-DDoS2019/processed/Meta.txt data/CIC-DDoS2019/processed/Label.csv
+	sudo perf record -F max -a -g ./main data/CIC-DDoS2019/processed/Data.csv data/CIC-DDoS2019/processed/Meta.txt data/CIC-DDoS2019/processed/Label.csv
 	sudo perf script > out.perf
 	../FlameGraph/stackcollapse-perf.pl out.perf > out.folded
 	../FlameGraph/flamegraph.pl out.folded > midas.svg

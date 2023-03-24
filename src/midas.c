@@ -72,7 +72,7 @@ double nitro_midasOperator(Midas *midas, Input input) {
 
   char key[32];
   sprintf(key, "%d", input.src * 13 + input.dst * 17);
-  cms_add(&(midas->current), key);
+  cms_add_fast(&(midas->current), key);
   ns_add(&(midas->n_total), key, 1.0, 0.25);
 
   return ComputeScore(cms_check_fast(&(midas->current), key),
