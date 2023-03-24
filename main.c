@@ -50,6 +50,7 @@ int main(int argc, char const *argv[]) {
       /** printf("MIDAS-R Original: Depth: %d, Width: %d\n", depth, width); */
       /**  */
       /** start_time = clock(); */
+      /**  */
       /** for (int j = 0; j < N; j++) { */
       /**  */
       /**   Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]}; */
@@ -115,7 +116,7 @@ int main(int argc, char const *argv[]) {
       /** midasRFree(midasR_geo); */
 
       /** //--------------------------------------------- */
-      // geo MIDAS-R
+      // Nitro MIDAS-R
 
       /** gsl_rng *nr = gsl_rng_alloc(gsl_rng_default); // allocate a random */
       /** gsl_rng_set(nr, time(NULL));                  // seed the generator */
@@ -139,7 +140,7 @@ int main(int argc, char const *argv[]) {
       /** total_time = (double)(end_time - start_time) / CLOCKS_PER_SEC; */
       /** printf("Total time: %lf\n", total_time); */
       /**  */
-      /** [> midasRFree(midasR_geo); <] */
+      /** [> [> midasRFree(midasR_geo); <] <] */
       /** gsl_rng_free(nr); */
       //---------------------------------------------
 
@@ -242,28 +243,27 @@ int main(int argc, char const *argv[]) {
       /** //--------------------------------------------- */
       /** // Original MIDAS-R */
 
-      MidasR *midasR = midasRInit(depth, width, 2, 1024, 0.5);
-
-      for (int j = 0; j < N; j++) {
-
-        Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]};
-        scores[j] = midasROperator(midasR, input);
-      }
-
-      /** //--------------------------------------------- */
-      // Nitro MIDAS-R
-
-      /** gsl_rng *nr = gsl_rng_alloc(gsl_rng_default); // allocate a random */
-      /** gsl_rng_set(nr, time(NULL));                  // seed the generator */
-      /**  */
-      /** MidasR *midasR_nitro = nitro_midasRInit(depth, width, 2, 1024, 0.5,
-       * nr); */
+      /** MidasR *midasR = midasRInit(depth, width, 2, 1024, 0.5); */
       /**  */
       /** for (int j = 0; j < N; j++) { */
       /**  */
       /**   Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]}; */
-      /**   scores[j] = nitro_midasROperator(midasR_nitro, input); */
+      /**   scores[j] = midasROperator(midasR, input); */
       /** } */
+
+      /** //--------------------------------------------- */
+      // Nitro MIDAS-R
+
+      gsl_rng *nr = gsl_rng_alloc(gsl_rng_default); // allocate a random
+      gsl_rng_set(nr, time(NULL));                  // seed the generator
+
+      MidasR *midasR_nitro = nitro_midasRInit(depth, width, 2, 1024, 0.5, nr);
+
+      for (int j = 0; j < N; j++) {
+
+        Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]};
+        scores[j] = nitro_midasROperator(midasR_nitro, input);
+      }
     }
   };
 
