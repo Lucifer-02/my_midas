@@ -1,7 +1,7 @@
-CC=gcc
+CC=clang-15
 SRCDIR=src
-COMPFLAGS = -g -lm -lgsl
-# COMPFLAGS += -Wall -Wextra -fsanitize=undefined,address
+COMPFLAGS = -lm -lgsl -mavx
+COMPFLAGS += -Wall -Wextra -fsanitize=undefined,address
 INPUT_DIR=data
 SCORE=temp/Score.txt
 LIB=src/count_min_sketch.c  src/auroc.c src/midas.c src/prepare.c src/midasR.c
@@ -45,11 +45,14 @@ pre:
 exp:
 	$(CC) -o test test.c src/count_min_sketch.c -lm; ./test
 
-perf:
+flame:
 	rm -rf midas.svg out.folded out.perf perf.data 
 	sudo perf record -F max -a -g ./main data/CIC-DDoS2019/processed/Data.csv data/CIC-DDoS2019/processed/Meta.txt data/CIC-DDoS2019/processed/Label.csv
 	sudo perf script > out.perf
 	../FlameGraph/stackcollapse-perf.pl out.perf > out.folded
 	../FlameGraph/flamegraph.pl out.folded > midas.svg
 	open midas.svg
+stat:
+	sudo perf stat -a ./main data/CIC-DDoS2019/processed/Data.csv data/CIC-DDoS2019/processed/Meta.txt data/CIC-DDoS2019/processed/Label.csv
+	
 

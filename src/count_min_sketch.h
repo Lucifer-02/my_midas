@@ -1,15 +1,8 @@
-#ifndef BARRUST_SIMPLE_COUNT_MIN_SKETCH_H__
-#define BARRUST_SIMPLE_COUNT_MIN_SKETCH_H__
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#ifndef COUNT_MIN_SKETCH_H
+#define COUNT_MIN_SKETCH_H
 
 #include <gsl/gsl_rng.h>
-#include <stddef.h>
 #include <stdint.h>
-
-#define COUNT_MIN_SKETCH_VERSION "0.1.8"
 
 /*  CMS_ERROR is problematic in that it is difficult to check for the error
     state since `INT_MIN` is a valid return value of the number of items
@@ -21,7 +14,7 @@ extern "C" {
 /* https://gcc.gnu.org/onlinedocs/gcc/Alternate-Keywords.html#Alternate-Keywords
  */
 #ifndef __GNUC__
-#define inline
+#define __inline__ inline
 #endif
 
 /* hashing function type */
@@ -38,7 +31,7 @@ typedef struct {
   cms_hash_function hash_function;
   double *bins;
   uint64_t *hashes;
-} CountMinSketch, count_min_sketch;
+} CountMinSketch;
 
 typedef struct {
   uint32_t depth;
@@ -93,6 +86,7 @@ static __inline__ int cms_init_optimal(CountMinSketch *cms, float error_rate,
     Return:
         CMS_SUCCESS */
 int cms_destroy(CountMinSketch *cms);
+int ns_destroy(NitroSketch *ns);
 
 /*  Reset the count-min sketch to zero elements inserted
 
@@ -132,6 +126,7 @@ static __inline__ void cms_add_fast(CountMinSketch *cms, const char *key) {
 }
 
 void ns_add(NitroSketch *nts, const char *key, double x, double prob);
+double cms_add_check(CountMinSketch *cms, const char *key, double x);
 
 /* Determine the maximum number of times the key may have been inserted */
 double cms_check(CountMinSketch *cms, const char *key);
@@ -158,11 +153,9 @@ static __inline__ uint64_t *ns_get_hashes(NitroSketch *nts, const char *key) {
 }
 
 void multipleAll(CountMinSketch *cms, double by, int width, int depth);
+void multipleAllAVX(CountMinSketch *cms, double by, int width, int depth);
 double cms_check_median(CountMinSketch *cms, const char *key);
 double ns_check_median(NitroSketch *nts, const char *key);
-void geo_add(CountMinSketch *cms, const char *key, double x, double prob,
-             gsl_rng *r);
-void my_add(CountMinSketch *cms, const char *key, double x, double p);
 
 /*  Determine the mean number of times the key may have been inserted
     NOTE: Mean check increases the over counting but is a `better` strategy
@@ -174,9 +167,5 @@ double ns_check_mean(NitroSketch *ns, const char *key);
 uint64_t *ns_get_hashes_fast(NitroSketch *ns, const char *key);
 uint64_t *cms_get_hashes_fast(CountMinSketch *cms, const char *key);
 double ns_check_mean_fast(NitroSketch *ns, const char *key);
-
-#ifdef __cplusplus
-} // extern "C"
-#endif
 
 #endif

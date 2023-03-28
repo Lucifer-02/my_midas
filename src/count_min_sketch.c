@@ -1,12 +1,14 @@
 #include "count_min_sketch.h"
 #include <gsl/gsl_randist.h>
-#include <gsl/gsl_rng.h>
 #include <inttypes.h> /* PRIu64 */
 #include <limits.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
+// include AVX lib
+#include <immintrin.h>
 
 #define LOG_TWO 0.6931471805599453
 
@@ -78,6 +80,8 @@ int ns_init_alt(NitroSketch *ns, uint32_t width, uint32_t depth,
 
 int cms_destroy(CountMinSketch *cms) {
   free(cms->bins);
+  if (cms->hashes != NULL)
+    free(cms->hashes);
   cms->width = 0;
   cms->depth = 0;
   cms->confidence = 0.0;
@@ -89,17 +93,18 @@ int cms_destroy(CountMinSketch *cms) {
   return CMS_SUCCESS;
 }
 
-int ns_destroy(NitroSketch *nts) {
-  free(nts->bins);
-  nts->width = 0;
-  nts->depth = 0;
-  nts->confidence = 0.0;
-  nts->error_rate = 0.0;
-  nts->elements_added = 0;
-  nts->hash_function = NULL;
-  nts->bins = NULL;
-  nts->r = NULL;
-  nts->row = 0;
+int ns_destroy(NitroSketch *ns) {
+  free(ns->bins);
+  free(ns->hashes);
+  ns->width = 0;
+  ns->depth = 0;
+  ns->confidence = 0.0;
+  ns->error_rate = 0.0;
+  ns->elements_added = 0;
+  ns->hash_function = NULL;
+  ns->bins = NULL;
+  ns->r = NULL;
+  ns->row = 0;
 
   return CMS_SUCCESS;
 }
@@ -117,7 +122,7 @@ int cms_clear(CountMinSketch *cms) {
   return CMS_SUCCESS;
 }
 
-int ns_clear(NitroSketch *nts) {
+int ns_clear(NitroSketch *ns) {
 
   /** uint32_t i, j = cms->width * cms->depth; */
   /** for (i = 0; i < j; ++i) { */
@@ -125,8 +130,8 @@ int ns_clear(NitroSketch *nts) {
   /** } */
 
   // set memory to 0
-  memset(nts->bins, 0, nts->width * nts->depth * sizeof(double));
-  nts->elements_added = 0;
+  memset(ns->bins, 0, ns->width * ns->depth * sizeof(double));
+  ns->elements_added = 0;
 
   return CMS_SUCCESS;
 }
@@ -151,77 +156,44 @@ void cms_add_inc_fast(CountMinSketch *cms, const char *key, double x) {
   cms_add_inc_alt(cms, hashes, x);
 }
 
-void my_add(CountMinSketch *cms, const char *key, double x, double p) {
-  // Set the random seed based on the current time
-  srand(time(NULL));
-
-  // Set the minimum and maximum values
-  int min = 0;
-  int max = 100;
-  int random_value;
+// add and check
+double cms_add_check(CountMinSketch *cms, const char *key, double x) {
 
   uint64_t *hashes = cms_get_hashes(cms, key);
+
+  double min = INT_MAX;
+
   for (unsigned int i = 0; i < cms->depth; ++i) {
+    uint64_t bin = (hashes[i] % cms->width) + (i * cms->width);
+    cms->bins[bin] = cms->bins[bin] + x;
 
-    random_value = min + rand() % (max - min + 1);
-
-    if (random_value < 100 * p) {
-      uint64_t bin = (hashes[i] % cms->width) + (i * cms->width);
-      cms->bins[bin] = cms->bins[bin] + x / p;
-    }
+    min = cms->bins[bin] < min ? cms->bins[bin] : min;
   }
 
-  cms->elements_added += x;
   free(hashes);
+  return min;
 }
 
-static uint32_t row = 0;
-void geo_add(CountMinSketch *cms, const char *key, double x, double prob,
-             gsl_rng *r) {
+void ns_add(NitroSketch *ns, const char *key, double x, double prob) {
 
-  for (unsigned int i = 0; i < cms->depth; ++i) {
-    if (row < cms->depth) {
+  for (unsigned int i = 0; i < ns->depth; ++i) {
 
-      /** printf("Current row: %d\n", row); */
-      uint64_t hash = __fnv_1a(key, row);
-      uint64_t bin = (hash % cms->width) + (row * cms->width);
-      cms->bins[bin] = cms->bins[bin] + x / prob;
-
-      row = (row == (cms->depth - 1) ? 0 : row);
-      uint32_t var = gsl_ran_geometric(r, prob);
-      /** int var = 5; */
-      row += var;
-      /** printf("Next row: %d\n", *row); */
-    } else {
-      row -= cms->depth;
-      /** printf("reduce row: %d\n", *row); */
+    if (ns->row >= ns->depth) {
+      ns->row -= ns->depth;
       break;
     }
-  }
-}
 
-void ns_add(NitroSketch *nts, const char *key, double x, double prob) {
+    /** printf("Current row: %d\n", row); */
+    uint64_t hash = __fnv_1a(key, ns->row);
+    uint64_t bin = (hash % ns->width) + (ns->row * ns->width);
 
-  for (unsigned int i = 0; i < nts->depth; ++i) {
+    ns->bins[bin] = ns->bins[bin] + x / prob;
 
-    if (nts->row < nts->depth) {
+    ns->row = (ns->row == (ns->depth - 1) ? 0 : ns->row);
+    uint32_t var = gsl_ran_geometric(ns->r, prob);
 
-      /** printf("Current row: %d\n", row); */
-      uint64_t hash = __fnv_1a(key, nts->row);
-      uint64_t bin = (hash % nts->width) + (nts->row * nts->width);
-
-      nts->bins[bin] = nts->bins[bin] + x / prob;
-
-      nts->row = (nts->row == (nts->depth - 1) ? 0 : nts->row);
-      uint32_t var = gsl_ran_geometric(nts->r, prob);
-
-      nts->row += var;
-      /** printf("Next row: %d\n", *row); */
-    } else {
-      nts->row -= nts->depth;
-      /** printf("reduce row: %d\n", *row); */
-      break;
-    }
+    /** int var = 5; */
+    ns->row += var;
   }
 }
 
@@ -300,7 +272,7 @@ double ns_check_mean(NitroSketch *ns, const char *key) {
 }
 
 double ns_check_mean_fast(NitroSketch *ns, const char *key) {
-  uint64_t *hashes = ns_get_hashes_fast(ns, key);
+  uint64_t *hashes = ns->hashes;
   double num_add = ns_check_mean_alt(ns, hashes, ns->depth);
   return num_add;
 }
@@ -432,6 +404,18 @@ void multipleAll(CountMinSketch *cms, double by, int width, int depth) {
   for (int i = 0; i < depth; i++) {
     for (int j = 0; j < width; j++) {
       cms->bins[i * width + j] *= by;
+    }
+  }
+}
+
+// multiple all using AVX instructions
+void multipleAllAVX(CountMinSketch *cms, double by, int width, int depth) {
+  __m256d by256 = _mm256_set1_pd(by);
+  for (int i = 0; i < depth; i++) {
+    for (int j = 0; j < width; j += 4) {
+      __m256d bins256 = _mm256_loadu_pd(cms->bins + i * width + j);
+      bins256 = _mm256_mul_pd(bins256, by256);
+      _mm256_storeu_pd(cms->bins + i * width + j, bins256);
     }
   }
 }

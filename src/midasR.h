@@ -32,9 +32,8 @@ MidasR *nitro_midasRInit(int total_depth, int total_width, int current_depth,
 MidasR *midasRInit(int total_depth, int total_width, int current_depth,
                    int current_width, double factor);
 double midasROperator(MidasR *midasR, Input input);
-double new_midasROperator(MidasR *midasR, Input input);
-double geo_midasROperator(MidasR *midasR, Input input, gsl_rng *r);
 double nitro_midasROperator(MidasR *midasR, Input input);
 void midasRFree(MidasR *midasR);
+void midasR_Nitro_Free(MidasR *midasR);
 
 #endif

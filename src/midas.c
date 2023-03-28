@@ -39,28 +39,10 @@ double midasOperator(Midas *midas, Input input) {
   cms_add(&(midas->current), key);
   cms_add(&(midas->total), key);
 
-  return ComputeScore(cms_check(&(midas->current), key),
-                      cms_check(&(midas->total), key), input.ts);
+  return ComputeScore(cms_add_check(&(midas->current), key, 1.0),
+                      cms_add_check(&(midas->total), key, 1.0), input.ts);
 
-  /** return 1; */
-}
-
-double geo_midasOperator(Midas *midas, Input input, gsl_rng *r) {
-
-  if (input.ts > midas->current_ts) {
-    cms_clear(&(midas->current));
-    midas->current_ts = input.ts;
-  }
-
-  char key[32];
-  sprintf(key, "%d", input.src * 13 + input.dst * 17);
-  cms_add(&(midas->current), key);
-  geo_add(&(midas->total), key, 1.0, 0.5, r);
-
-  return ComputeScore(cms_check(&(midas->current), key),
-                      cms_check_median(&(midas->total), key), input.ts);
-
-  /** return 1; */
+  // return 1;
 }
 
 double nitro_midasOperator(Midas *midas, Input input) {
@@ -73,29 +55,14 @@ double nitro_midasOperator(Midas *midas, Input input) {
   char key[32];
   sprintf(key, "%d", input.src * 13 + input.dst * 17);
   cms_add_fast(&(midas->current), key);
-  ns_add(&(midas->n_total), key, 1.0, 0.25);
+  ns_add(&(midas->n_total), key, 1.0, 0.125);
 
   return ComputeScore(cms_check_fast(&(midas->current), key),
-                      ns_check_mean_fast(&(midas->n_total), key), input.ts);
+                      ns_check_mean(&(midas->n_total), key), input.ts);
 
-  /** return 1; */
+  // return 1;
 }
 
-double new_midasOperator(Midas *midas, Input input) {
-
-  if (input.ts > midas->current_ts) {
-    cms_clear(&(midas->current));
-    midas->current_ts = input.ts;
-  }
-
-  char hash[32];
-  sprintf(hash, "%d", input.src * 13 + input.dst * 17);
-  cms_add(&(midas->current), hash);
-  my_add(&(midas->total), hash, 0.25, 1.0);
-
-  return ComputeScore(cms_check(&(midas->current), hash),
-                      cms_check_median(&(midas->total), hash), input.ts);
-}
 void midasFree(Midas *midas) {
   cms_destroy(&(midas->current));
   cms_destroy(&(midas->total));
