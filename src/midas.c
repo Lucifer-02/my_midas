@@ -1,7 +1,6 @@
 #include "midas.h"
 #include "count_min_sketch.h"
 #include <gsl/gsl_rng.h>
-#include <stdio.h>
 
 static double ComputeScore(double a, double s, double t) {
   return s == 0 || t - 1 == 0 ? 0 : pow((a - s / t) * t, 2) / (s * (t - 1));
@@ -45,7 +44,7 @@ double midasOperator(Midas *midas, Input input) {
   // return 1;
 }
 
-double nitro_midasOperator(Midas *midas, Input input) {
+double nitro_midasOperator(Midas *midas, Input input, double prob) {
 
   if (input.ts > midas->current_ts) {
     cms_clear(&(midas->current));
@@ -55,7 +54,7 @@ double nitro_midasOperator(Midas *midas, Input input) {
   char key[32];
   sprintf(key, "%d", input.src * 13 + input.dst * 17);
   cms_add_fast(&(midas->current), key);
-  ns_add(&(midas->n_total), key, 1.0, 0.125);
+  ns_add(&(midas->n_total), key, 1.0, prob);
 
   return ComputeScore(cms_check_fast(&(midas->current), key),
                       ns_check_mean(&(midas->n_total), key), input.ts);
@@ -66,5 +65,11 @@ double nitro_midasOperator(Midas *midas, Input input) {
 void midasFree(Midas *midas) {
   cms_destroy(&(midas->current));
   cms_destroy(&(midas->total));
+  free(midas);
+}
+
+void nitro_midasFree(Midas *midas) {
+  cms_destroy(&(midas->current));
+  ns_destroy(&(midas->n_total));
   free(midas);
 }

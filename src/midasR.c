@@ -1,12 +1,14 @@
 #include "midasR.h"
 #include "count_min_sketch.h"
+#include "nitro_sketch.h"
 
 MidasR *midasRInit(int total_depth, int total_width, int current_depth,
                    int current_width, double factor) {
   MidasR *midasR = malloc(sizeof(MidasR));
   midasR->factor = factor;
 
-  cms_init(&(midasR->numCurrentEdge), current_width, current_depth); cms_init(&(midasR->numTotalEdge), total_width, total_depth);
+  cms_init(&(midasR->numCurrentEdge), current_width, current_depth);
+  cms_init(&(midasR->numTotalEdge), total_width, total_depth);
   cms_init(&(midasR->numCurrentSource), current_width, current_depth);
   cms_init(&(midasR->numTotalSource), total_width, total_depth);
   cms_init(&(midasR->numCurrentDestination), current_width, current_depth);
@@ -58,7 +60,7 @@ double midasROperator(MidasR *midasR, Input input) {
     midasR->current_ts = input.ts;
   }
 
-  char hash_src[100], hash_dst[100], hash_edge[100];
+  char hash_src[32], hash_dst[32], hash_edge[32];
 
   sprintf(hash_edge, "%d", input.src * 17 + input.dst * 13);
   cms_add(&(midasR->numCurrentEdge), hash_edge);
@@ -84,7 +86,7 @@ double midasROperator(MidasR *midasR, Input input) {
   /** return 1; */
 }
 
-double nitro_midasROperator(MidasR *midasR, Input input) {
+double nitro_midasROperator(MidasR *midasR, Input input, double prob) {
 
   if (input.ts > midasR->current_ts) {
 
@@ -100,32 +102,33 @@ double nitro_midasROperator(MidasR *midasR, Input input) {
     midasR->current_ts = input.ts;
   }
 
-  char hash_src[100], hash_dst[100], hash_edge[100];
+  char hash_src[32], hash_dst[32], hash_edge[32];
 
   sprintf(hash_edge, "%d", input.src * 17 + input.dst * 13);
   cms_add_fast(&(midasR->numCurrentEdge), hash_edge);
-  ns_add(&(midasR->ns_numTotalEdge), hash_edge, 1.0, 0.125);
+  ns_add(&(midasR->ns_numTotalEdge), hash_edge, 1.0, prob);
 
   sprintf(hash_src, "%d", input.src);
   cms_add_fast(&(midasR->numCurrentSource), hash_src);
-  ns_add(&(midasR->ns_numTotalSource), hash_src, 1.0, 0.125);
+  ns_add(&(midasR->ns_numTotalSource), hash_src, 1.0, prob);
 
   sprintf(hash_dst, "%d", input.dst);
   cms_add_fast(&(midasR->numCurrentDestination), hash_dst);
-  ns_add(&(midasR->ns_numTotalDestination), hash_dst, 1.0, 0.125);
+  ns_add(&(midasR->ns_numTotalDestination), hash_dst, 1.0, prob);
 
   return max(
       ComputeScore(cms_check_fast(&(midasR->numCurrentEdge), hash_edge),
-                   ns_check_mean_fast(&(midasR->ns_numTotalEdge), hash_edge),
+                   ns_check_median_fast(&(midasR->ns_numTotalEdge), hash_edge),
                    input.ts),
       ComputeScore(cms_check_fast(&(midasR->numCurrentSource), hash_src),
-                   ns_check_mean_fast(&(midasR->ns_numTotalSource), hash_src),
+                   ns_check_median_fast(&(midasR->ns_numTotalSource), hash_src),
                    input.ts),
-      ComputeScore(cms_check_fast(&(midasR->numCurrentDestination), hash_dst),
-                   ns_check_mean_fast(&(midasR->ns_numTotalDestination), hash_dst),
-                   input.ts));
+      ComputeScore(
+          cms_check_fast(&(midasR->numCurrentDestination), hash_dst),
+          ns_check_median_fast(&(midasR->ns_numTotalDestination), hash_dst),
+          input.ts));
 
-  return 1;
+  // return 1;
 }
 void midasRFree(MidasR *midasR) {
   cms_destroy(&(midasR->numCurrentEdge));
