@@ -1,6 +1,6 @@
 CC=gcc
 SRCDIR=src
-COMPFLAGS = -O3 -lm -lgsl -mavx 
+COMPFLAGS = -lm -lgsl -mavx 
 # COMPFLAGS += -Wall -Wextra -fsanitize=undefined,address
 INPUT_DIR=data
 SCORE=temp/Score.txt
