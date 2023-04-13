@@ -1,11 +1,17 @@
 CC=gcc
 SRCDIR=src
-COMPFLAGS = -lm -lgsl -mavx 
+COMPFLAGS = -O3 -lm -lgsl -mavx 
 # COMPFLAGS += -Wall -Wextra -fsanitize=undefined,address
 INPUT_DIR=data
 SCORE=temp/Score.txt
 LIB=src/count_min_sketch.c  src/nitro_sketch.c src/auroc.c src/midas.c src/prepare.c src/midasR.c
-DEFINES = -DFULL=1 -DAUC=0 -DNITRO_MIDAS=0 -DMIDAS=0 -DMIDAS_R=1 -DNITRO_MIDAS_R=1
+
+DEFINES = -DFULL=1 
+DEFINES += -DAUC=1 
+DEFINES += -DNITRO_MIDAS=1 
+DEFINES += -DMIDAS=1 
+DEFINES += -DMIDAS_R=1 
+DEFINES += -DNITRO_MIDAS_R=1 
 
 
 darpa: INPUT_DIR=data/DARPA/processed

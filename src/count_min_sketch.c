@@ -4,9 +4,11 @@
 #include <limits.h>
 #include <math.h>
 #include <pthread.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <xxh3.h>
 
 // include AVX lib
 #include <immintrin.h>
@@ -26,6 +28,18 @@ static int __double_compare(const void *a, const void *b);
 #ifndef __has_builtin
 #define __has_builtin(x) 0
 #endif
+
+static uint64_t *new_hashes(uint64_t *hashes, const char *str, int depth) {
+  uint64_t hash1 = XXH64(str, strlen(str), 13);
+  uint64_t delta = (hash1 >> 17) | (hash1 << 47);
+  hashes[0] = hash1;
+  for (int i = 1; i < depth; i++) {
+    hash1 += delta;
+    hashes[i] = hash1;
+    delta += i;
+  }
+  return hashes;
+}
 
 int cms_init_optimal_alt(CountMinSketch *cms, double error_rate,
                          double confidence, cms_hash_function hash_function) {
@@ -96,31 +110,14 @@ void cms_add_inc(CountMinSketch *cms, const char *key, double x) {
 }
 
 void cms_add_inc_fast(CountMinSketch *cms, const char *key, double x) {
-  uint64_t *hashes = cms_get_hashes_fast(cms, key);
+  // uint64_t *hashes = cms_get_hashes_fast(cms, key);
+  uint64_t *hashes = new_hashes(cms->hashes, key, cms->depth);
   for (unsigned int i = 0; i < cms->depth; ++i) {
     uint64_t bin = (hashes[i] % cms->width) + (i * cms->width);
     cms->bins[bin] = cms->bins[bin] + x;
   }
 
   cms->elements_added += x;
-}
-
-// add and check
-double cms_add_check(CountMinSketch *cms, const char *key, double x) {
-
-  uint64_t *hashes = cms_get_hashes(cms, key);
-
-  double min = INT_MAX;
-
-  for (unsigned int i = 0; i < cms->depth; ++i) {
-    uint64_t bin = (hashes[i] % cms->width) + (i * cms->width);
-    cms->bins[bin] = cms->bins[bin] + x;
-
-    min = cms->bins[bin] < min ? cms->bins[bin] : min;
-  }
-
-  free(hashes);
-  return min;
 }
 
 double cms_check_alt(CountMinSketch *cms, uint64_t *hashes,
@@ -241,6 +238,8 @@ static double cms_check_median_alt(CountMinSketch *cms, uint64_t *hashes,
 
 double cms_check_median(CountMinSketch *cms, const char *key) {
   uint64_t *hashes = cms_get_hashes(cms, key);
+  // uint64_t *hashes = new_hashes(cms->hashes, key, cms->depth);
+
   double num_add = cms_check_median_alt(cms, hashes, cms->depth);
   free(hashes);
   return num_add;
@@ -254,7 +253,8 @@ uint64_t *cms_get_hashes_alt(CountMinSketch *cms, unsigned int num_hashes,
 uint64_t *cms_get_hashes_fast(CountMinSketch *cms, const char *key) {
 
   for (unsigned int i = 0; i < cms->depth; ++i) {
-    cms->hashes[i] = __fnv_1a(key, i);
+    // cms->hashes[i] = __fnv_1a(key, i);
+    cms->hashes[i] = XXH64(key, strlen(key), i);
   }
   return cms->hashes;
 }
@@ -306,7 +306,8 @@ static int __setup_cms(CountMinSketch *cms, unsigned int width,
 static uint64_t *__default_hash(unsigned int num_hashes, const char *str) {
   uint64_t *results = (uint64_t *)calloc(num_hashes, sizeof(uint64_t));
   for (unsigned int i = 0; i < num_hashes; ++i) {
-    results[i] = __fnv_1a(str, i);
+    // results[i] = __fnv_1a(str, i);
+    results[i] = XXH64(str, strlen(str), i);
   }
 
   return results;

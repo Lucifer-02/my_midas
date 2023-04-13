@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <xxh3.h>
 
 // include AVX lib
 #include <immintrin.h>
@@ -25,6 +26,15 @@ static int __double_compare(const void *a, const void *b);
 #ifndef __has_builtin
 #define __has_builtin(x) 0
 #endif
+
+static uint64_t *new_hashes(uint64_t *hashes, const char *str, int depth) {
+  uint64_t hash1 = XXH64(str, strlen(str), 13);
+  hashes[0] = hash1;
+  for (int i = 1; i < depth; i++) {
+    hashes[i] = hash1 + i;
+  }
+  return hashes;
+}
 
 int ns_init_optimal_alt(NitroSketch *ns, double error_rate, double confidence,
                         ns_hash_function hash_function, gsl_rng *r) {
@@ -85,7 +95,8 @@ void ns_add(NitroSketch *ns, const char *key, double x, double prob) {
     }
 
     /** printf("Current row: %d\n", row); */
-    uint64_t hash = __fnv_1a(key, ns->row);
+    // uint64_t hash = __fnv_1a(key, ns->row);
+    uint64_t hash = XXH64(key, strlen(key), 13) + ns->row;
     uint64_t bin = (hash % ns->width) + (ns->row * ns->width);
 
     ns->bins[bin] = ns->bins[bin] + x / prob;
@@ -93,7 +104,7 @@ void ns_add(NitroSketch *ns, const char *key, double x, double prob) {
     ns->row = (ns->row == (ns->depth - 1) ? 0 : ns->row);
     uint32_t var = gsl_ran_geometric(ns->r, prob);
 
-    /** int var = 5; */
+    // int var = 5;
     ns->row += var;
   }
 }
@@ -186,7 +197,8 @@ double median(double *a, int n) {
 double ns_check_median_fast(NitroSketch *ns, const char *key) {
 
   double num_add = 0;
-  uint64_t *hashes = ns_get_hashes_fast(ns, key);
+  // uint64_t *hashes = ns_get_hashes_fast(ns, key);
+  uint64_t *hashes = new_hashes(ns->hashes, key, ns->depth);
   double *median_values = ns->pool;
   for (unsigned int i = 0; i < ns->depth; ++i) {
     uint32_t bin = (hashes[i] % ns->width) + (i * ns->width);
@@ -212,7 +224,8 @@ uint64_t *ns_get_hashes_alt(NitroSketch *ns, unsigned int num_hashes,
 uint64_t *ns_get_hashes_fast(NitroSketch *ns, const char *key) {
 
   for (unsigned int i = 0; i < ns->depth; ++i) {
-    ns->hashes[i] = __fnv_1a(key, i);
+    // ns->hashes[i] = __fnv_1a(key, i);
+    ns->hashes[i] = XXH64(key, strlen(key), i);
   }
   return ns->hashes;
 }
@@ -248,7 +261,8 @@ static int __setup_ns(NitroSketch *ns, unsigned int width, unsigned int depth,
 static uint64_t *__default_hash(unsigned int num_hashes, const char *str) {
   uint64_t *results = (uint64_t *)calloc(num_hashes, sizeof(uint64_t));
   for (unsigned int i = 0; i < num_hashes; ++i) {
-    results[i] = __fnv_1a(str, i);
+    // results[i] = __fnv_1a(str, i);
+    results[i] = XXH64(str, strlen(str), i);
   }
 
   return results;

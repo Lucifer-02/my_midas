@@ -1,5 +1,6 @@
 #include "midas.h"
 #include "count_min_sketch.h"
+#include "nitro_sketch.h"
 #include <gsl/gsl_rng.h>
 
 static double ComputeScore(double a, double s, double t) {
@@ -38,8 +39,8 @@ double midasOperator(Midas *midas, Input input) {
   cms_add(&(midas->current), key);
   cms_add(&(midas->total), key);
 
-  return ComputeScore(cms_add_check(&(midas->current), key, 1.0),
-                      cms_add_check(&(midas->total), key, 1.0), input.ts);
+  return ComputeScore(cms_check(&(midas->current), key),
+                      cms_check(&(midas->total), key), input.ts);
 
   // return 1;
 }
@@ -57,7 +58,7 @@ double nitro_midasOperator(Midas *midas, Input input, double prob) {
   ns_add(&(midas->n_total), key, 1.0, prob);
 
   return ComputeScore(cms_check_fast(&(midas->current), key),
-                      ns_check_mean(&(midas->n_total), key), input.ts);
+                      ns_check_median_fast(&(midas->n_total), key), input.ts);
 
   // return 1;
 }

@@ -25,7 +25,6 @@ Midas *midasInit(int total_depth, int total_width, int current_depth,
 Midas *nitro_midasInit(int total_depth, int total_width, int current_depth,
                        int current_width, gsl_rng *r);
 double midasOperator(Midas *midas, Input input);
-double midasOperator_threads(Midas *midas, Input input);
 double nitro_midasOperator(Midas *midas, Input input, double prob);
 void midasFree(Midas *midas);
 void nitro_midasFree(Midas *midas);
