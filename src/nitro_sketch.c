@@ -1,12 +1,7 @@
 #include "nitro_sketch.h"
 #include <gsl/gsl_randist.h>
 #include <inttypes.h> /* PRIu64 */
-#include <limits.h>
 #include <math.h>
-#include <pthread.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 #include <xxh3.h>
 
 // include AVX lib

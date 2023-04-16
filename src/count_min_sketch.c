@@ -1,13 +1,7 @@
 #include "count_min_sketch.h"
-#include <gsl/gsl_randist.h>
 #include <inttypes.h> /* PRIu64 */
-#include <limits.h>
 #include <math.h>
-#include <pthread.h>
-#include <stdint.h>
-#include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <xxh3.h>
 
 // include AVX lib
@@ -144,7 +138,7 @@ double cms_check(CountMinSketch *cms, const char *key) {
   return num_add;
 }
 
-double cms_check_fast(CountMinSketch *cms, const char *key) {
+double cms_check_fast(CountMinSketch *cms) {
   uint64_t *hashes = cms->hashes;
   double num_add = INT32_MAX;
   for (unsigned int i = 0; i < cms->depth; ++i) {
@@ -259,22 +253,22 @@ uint64_t *cms_get_hashes_fast(CountMinSketch *cms, const char *key) {
   return cms->hashes;
 }
 
-void multipleAll(CountMinSketch *cms, double by, int width, int depth) {
-  for (int i = 0; i < depth; i++) {
-    for (int j = 0; j < width; j++) {
-      cms->bins[i * width + j] *= by;
+void multipleAll(CountMinSketch *cms, double by) {
+  for (unsigned int i = 0; i < cms->depth; i++) {
+    for (unsigned int j = 0; j < cms->width; j++) {
+      cms->bins[i * cms->width + j] *= by;
     }
   }
 }
 
 // multiple all using AVX instructions
-void multipleAllAVX(CountMinSketch *cms, double by, int width, int depth) {
+void multipleAllAVX(CountMinSketch *cms, double by) {
   __m256d by256 = _mm256_set1_pd(by);
-  for (int i = 0; i < depth; i++) {
-    for (int j = 0; j < width; j += 4) {
-      __m256d bins256 = _mm256_loadu_pd(cms->bins + i * width + j);
+  for (unsigned int i = 0; i < cms->depth; i++) {
+    for (unsigned int j = 0; j < cms->width; j += 4) {
+      __m256d bins256 = _mm256_loadu_pd(cms->bins + i * cms->width + j);
       bins256 = _mm256_mul_pd(bins256, by256);
-      _mm256_storeu_pd(cms->bins + i * width + j, bins256);
+      _mm256_storeu_pd(cms->bins + i * cms->width + j, bins256);
     }
   }
 }

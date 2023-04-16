@@ -14,16 +14,16 @@ typedef struct {
     NitroSketch ns_numTotalEdge;
     CountMinSketch numTotalEdge;
   };
-  CountMinSketch numCurrentSource;
+  CountMinSketch numCurrentSrc;
   union {
-    NitroSketch ns_numTotalSource;
-    CountMinSketch numTotalSource;
+    NitroSketch ns_numTotalSrc;
+    CountMinSketch numTotalSrc;
   };
 
-  CountMinSketch numCurrentDestination;
+  CountMinSketch numCurrentDst;
   union {
-    NitroSketch ns_numTotalDestination;
-    CountMinSketch numTotalDestination;
+    NitroSketch ns_numTotalDst;
+    CountMinSketch numTotalDst;
   };
   int current_ts;
 } MidasR;

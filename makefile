@@ -8,8 +8,8 @@ LIB=src/count_min_sketch.c  src/nitro_sketch.c src/auroc.c src/midas.c src/prepa
 
 DEFINES = -DFULL=1 
 DEFINES += -DAUC=1 
-DEFINES += -DNITRO_MIDAS=1 
-DEFINES += -DMIDAS=1 
+DEFINES += -DNITRO_MIDAS=0 
+DEFINES += -DMIDAS=0 
 DEFINES += -DMIDAS_R=1 
 DEFINES += -DNITRO_MIDAS_R=1 
 

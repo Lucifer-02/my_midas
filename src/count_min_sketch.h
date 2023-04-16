@@ -32,17 +32,6 @@ typedef struct {
   uint64_t *hashes;
 } CountMinSketch;
 
-typedef struct {
-  uint32_t depth;
-  uint32_t width;
-  int64_t elements_added;
-  double confidence;
-  double error_rate;
-  cms_hash_function hash_function;
-  double bins[8][2048];
-  uint64_t hashes[8];
-} Stack_CountMinSketch;
-
 /*  Initialize the count-min sketch based on user defined width and depth
     Alternatively, one can also pass in a custom hash function
 
@@ -52,15 +41,9 @@ typedef struct {
    width or depth are 0 */
 int cms_init_alt(CountMinSketch *cms, unsigned int width, unsigned int depth,
                  cms_hash_function hash_function);
-int scms_init_alt(Stack_CountMinSketch *scms, unsigned int width,
-                  unsigned int depth, cms_hash_function hash_function);
 static __inline__ int cms_init(CountMinSketch *cms, unsigned int width,
                                unsigned int depth) {
   return cms_init_alt(cms, width, depth, NULL);
-}
-static __inline__ int scms_init(Stack_CountMinSketch *scms, unsigned int width,
-                                unsigned int depth) {
-  return scms_init_alt(scms, width, depth, NULL);
 }
 
 /*  Initialize the count-min sketch based on user defined error rate and
@@ -89,7 +72,6 @@ int cms_destroy(CountMinSketch *cms);
     Return:
         CMS_SUCCESS */
 int cms_clear(CountMinSketch *cms);
-int scms_clear(Stack_CountMinSketch *scms);
 
 /*  Insertion family of functions:
 
@@ -110,16 +92,12 @@ int scms_clear(Stack_CountMinSketch *scms);
 
 /* Add the provided key to the count-min sketch `x` times */
 void cms_add_inc(CountMinSketch *cms, const char *key, double x);
-void scms_add_inc(Stack_CountMinSketch *scms, const char *key, double x);
 void cms_add_inc_alt(CountMinSketch *cms, uint64_t *hashes, double x);
 void cms_add_inc_fast(CountMinSketch *cms, const char *key, double x);
 
 /* Add the provided key to the count-min sketch */
 static __inline__ void cms_add(CountMinSketch *cms, const char *key) {
   cms_add_inc(cms, key, 1.0);
-}
-static __inline__ void scms_add(Stack_CountMinSketch *scms, const char *key) {
-  scms_add_inc(scms, key, 1.0);
 }
 
 static __inline__ void cms_add_fast(CountMinSketch *cms, const char *key) {
@@ -130,10 +108,9 @@ double cms_add_check(CountMinSketch *cms, const char *key, double x);
 
 /* Determine the maximum number of times the key may have been inserted */
 double cms_check(CountMinSketch *cms, const char *key);
-double scms_check(Stack_CountMinSketch *scms, const char *key);
 double cms_check_alt(CountMinSketch *cms, uint64_t *hashes,
                      unsigned int num_hashes);
-double cms_check_fast(CountMinSketch *cms, const char *key);
+double cms_check_fast(CountMinSketch *cms);
 
 /*  Return the hashes for the provided key based on the hashing function of
     the count-min sketch
@@ -142,19 +119,13 @@ double cms_check_fast(CountMinSketch *cms, const char *key);
     NOTE: Up to the caller to free the array of hash values */
 uint64_t *cms_get_hashes_alt(CountMinSketch *cms, unsigned int num_hashes,
                              const char *key);
-uint64_t *scms_get_hashes_alt(Stack_CountMinSketch *scms,
-                              unsigned int num_hashes, const char *key);
 static __inline__ uint64_t *cms_get_hashes(CountMinSketch *cms,
                                            const char *key) {
   return cms_get_hashes_alt(cms, cms->depth, key);
 }
-static __inline__ uint64_t *scms_get_hashes(Stack_CountMinSketch *scms,
-                                            const char *key) {
-  return scms_get_hashes_alt(scms, scms->depth, key);
-}
 
-void multipleAll(CountMinSketch *cms, double by, int width, int depth);
-void multipleAllAVX(CountMinSketch *cms, double by, int width, int depth);
+void multipleAll(CountMinSketch *cms, double by);
+void multipleAllAVX(CountMinSketch *cms, double by);
 double cms_check_median(CountMinSketch *cms, const char *key);
 
 /*  Determine the mean number of times the key may have been inserted

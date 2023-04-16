@@ -30,8 +30,8 @@ int main(int argc, char const *argv[]) {
   read_labels(argv[3], labels, N);
   read_density(argv[4], density, N);
 
-  int widths[] = {4096*8};
-  int depths[] = {16};
+  int widths[] = {2048};
+  int depths[] = {4};
   int num_widths = sizeof(widths) / sizeof(widths[0]);
   int num_depths = sizeof(depths) / sizeof(depths[0]);
 
@@ -50,7 +50,7 @@ int main(int argc, char const *argv[]) {
 #if MIDAS_R
       // Original MIDAS-R
 
-      MidasR *midasR = midasRInit(depth, width, 2, 1024, 0.9);
+      MidasR *midasR = midasRInit(depth, width, depth, width, 0.9);
 
       printf("MIDAS-R Original: Depth: %d, Width: %d\n", depth, width);
 
@@ -84,7 +84,8 @@ int main(int argc, char const *argv[]) {
       gsl_rng *nr1 = gsl_rng_alloc(gsl_rng_default); // allocate a random
       gsl_rng_set(nr1, time(NULL));                  // seed the generator
 
-      MidasR *midasR_nitro = nitro_midasRInit(depth, width, 2, 1024, 0.9, nr1);
+      MidasR *midasR_nitro =
+          nitro_midasRInit(depth, width, depth, width, 0.9, nr1);
       double prob4;
 
       printf("MIDAS-R Nitro: Depth: %d, Width: %d\n", depth, width);
@@ -122,7 +123,7 @@ int main(int argc, char const *argv[]) {
       // Original MIDAS
 #if MIDAS
 
-      Midas *midas = midasInit(depth, width, 2, 1024);
+      Midas *midas = midasInit(depth, width, depth, width);
       // print error rate and confidence
       printf("MIDAS : Depth: %d, Width: %d\n", depth, width);
 
@@ -156,7 +157,7 @@ int main(int argc, char const *argv[]) {
       gsl_rng *nr = gsl_rng_alloc(gsl_rng_default); // allocate a random
       gsl_rng_set(nr, time(NULL));                  // seed the generator
 
-      Midas *midas_nitro = nitro_midasInit(depth, width, 2, 1024, nr);
+      Midas *midas_nitro = nitro_midasInit(depth, width, depth, width, nr);
       double prob8 = 1;
 
       // print error rate and confidence

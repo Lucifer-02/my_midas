@@ -7,6 +7,8 @@ static double ComputeScore(double a, double s, double t) {
   return s == 0 || t - 1 == 0 ? 0 : pow((a - s / t) * t, 2) / (s * (t - 1));
 }
 
+static int combine(int a, int b) { return a * 17 + b * 13; }
+
 Midas *midasInit(int total_depth, int total_width, int current_depth,
                  int current_width) {
   Midas *midas = malloc(sizeof(Midas));
@@ -35,7 +37,7 @@ double midasOperator(Midas *midas, Input input) {
   }
 
   char key[32];
-  sprintf(key, "%d", input.src * 13 + input.dst * 17);
+  sprintf(key, "%d", combine(input.src, input.dst));
   cms_add(&(midas->current), key);
   cms_add(&(midas->total), key);
 
@@ -53,11 +55,11 @@ double nitro_midasOperator(Midas *midas, Input input, double prob) {
   }
 
   char key[32];
-  sprintf(key, "%d", input.src * 13 + input.dst * 17);
+  sprintf(key, "%d", combine(input.src, input.dst));
   cms_add_fast(&(midas->current), key);
   ns_add(&(midas->n_total), key, 1.0, prob);
 
-  return ComputeScore(cms_check_fast(&(midas->current), key),
+  return ComputeScore(cms_check_fast(&(midas->current)),
                       ns_check_median_fast(&(midas->n_total), key), input.ts);
 
   // return 1;
