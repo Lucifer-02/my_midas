@@ -23,14 +23,14 @@ static int __double_compare(const void *a, const void *b);
 #define __has_builtin(x) 0
 #endif
 
-static uint64_t *new_hashes(uint64_t *hashes, const char *str, int depth) {
-  uint64_t hash1 = XXH64(str, strlen(str), 13);
-  uint64_t delta = (hash1 >> 17) | (hash1 << 47);
-  hashes[0] = hash1;
-  for (int i = 1; i < depth; i++) {
-    hash1 += delta;
-    hashes[i] = hash1;
+static uint64_t *new_hashes(uint64_t *hashes, const char *key, int depth) {
+  uint64_t hash = XXH64(key, strlen(key), 13);
+  uint64_t delta = (hash >> 17) | (hash << 47);
+
+  for (int i = 0; i < depth; i++) {
     delta += i;
+    hashes[i] = hash;
+    hash += delta;
   }
   return hashes;
 }

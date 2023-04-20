@@ -97,7 +97,8 @@ int main(int argc, char const *argv[]) {
         Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]};
 
         prob4 = 1.0 * (density[j] < 5) +
-                0.25 * (density[j] >= 5 && density[j] < 20) +
+                0.5 * (density[j] >= 5 && density[j] < 10) +
+                0.25 * (density[j] >= 10 && density[j] < 20) +
                 0.125 * (density[j] >= 20);
         scores[j] = nitro_midasROperator(midasR_nitro, input, prob4);
       }

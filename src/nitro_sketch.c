@@ -22,11 +22,10 @@ static int __double_compare(const void *a, const void *b);
 #define __has_builtin(x) 0
 #endif
 
-static uint64_t *new_hashes(uint64_t *hashes, const char *str, int depth) {
-  uint64_t hash1 = XXH64(str, strlen(str), 13);
-  hashes[0] = hash1;
-  for (int i = 1; i < depth; i++) {
-    hashes[i] = hash1 + i;
+static uint64_t *new_hashes(uint64_t *hashes, const char *key, int depth) {
+  uint64_t hash = XXH64(key, strlen(key), 13);
+  for (int i = 0; i < depth; i++) {
+    hashes[i] = hash + i;
   }
   return hashes;
 }
@@ -89,8 +88,8 @@ void ns_add(NitroSketch *ns, const char *key, double x, double prob) {
       break;
     }
 
-    /** printf("Current row: %d\n", row); */
     // uint64_t hash = __fnv_1a(key, ns->row);
+    // 13 is magic number
     uint64_t hash = XXH64(key, strlen(key), 13) + ns->row;
     uint64_t bin = (hash % ns->width) + (ns->row * ns->width);
 
@@ -99,7 +98,6 @@ void ns_add(NitroSketch *ns, const char *key, double x, double prob) {
     ns->row = (ns->row == (ns->depth - 1) ? 0 : ns->row);
     uint32_t var = gsl_ran_geometric(ns->r, prob);
 
-    // int var = 5;
     ns->row += var;
   }
 }
@@ -157,6 +155,7 @@ static double ns_check_median_alt(NitroSketch *ns, uint64_t *hashes,
   return num_add;
 }
 
+// implement the median of medians algorithm
 double median(double *a, int n) {
   int i, j, k, l, r;
   double x, t;
