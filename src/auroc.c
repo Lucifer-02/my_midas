@@ -43,9 +43,7 @@ void my_qsort2(size_t *base, size_t size, const double *yPred) {
 
   // push the initial sub-array bounds onto the stack
   stack[stack_top++] = (StackItem){0, size - 1};
-
-  while (stack_top > 0) {
-    // pop the top sub-array bounds from the stack
+while (stack_top > 0) { // pop the top sub-array bounds from the stack
     StackItem item = stack[--stack_top];
     size_t left = item.left;
     size_t right = item.right;

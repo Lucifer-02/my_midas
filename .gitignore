@@ -2,4 +2,7 @@ data/
 temp/
 .gitignore
 main
+perf.data
+out.perf
+out.folded
 

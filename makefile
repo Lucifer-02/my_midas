@@ -7,39 +7,39 @@ SCORE=temp/Score.txt
 LIB=src/count_min_sketch.c  src/nitro_sketch.c src/auroc.c src/midas.c src/prepare.c src/midasR.c
 
 DEFINES = -DFULL=1 
-DEFINES += -DAUC=0 
-DEFINES += -DNITRO_MIDAS=0 
-DEFINES += -DMIDAS=0 
+DEFINES += -DAUC=1 
+DEFINES += -DNITRO_MIDAS=1 
+DEFINES += -DMIDAS=1 
 DEFINES += -DMIDAS_R=1 
 DEFINES += -DNITRO_MIDAS_R=1 
 
 
 darpa: INPUT_DIR=data/DARPA/processed
-darpa: run roc
+darpa: run
 
 darpa2: INPUT_DIR=data/DARPA2/processed
-darpa2: run roc 
+darpa2: run 
 
 cic2018: INPUT_DIR=data/CIC-IDS2018/processed
-cic2018: run roc 
+cic2018: run 
 
 cic2019: INPUT_DIR=data/CIC-DDoS2019/processed
-cic2019: run roc 
+cic2019: run 
 
 ctu: INPUT_DIR=data/CTU-13/processed
-ctu: run roc
+ctu: run 
 
 iscx: INPUT_DIR=data/ISCX-IDS2012/processed
-iscx: run roc
+iscx: run 
 
 unsw: INPUT_DIR=data/UNSW-NB15/processed
-unsw: run roc
+unsw: run 
 
 
 clean:
 	rm -r main
 	rm ./temp/Score.txt
-	rm -rf midas.svg out.folded out.perf perf.data 
+	# rm -rf midas.svg out.folded out.perf perf.data 
 
 com: 
 	clear
@@ -70,3 +70,13 @@ stat:
 roc:
 	python3 util/ReproduceROC.py $(INPUT_DIR)/Label.csv $(SCORE)
 	python3 util/viz_roc.py temp/ROC.csv
+
+darpa_roc:
+	python3 util/viz_roc.py temp/ns_ROC.csv temp/ROC.csv
+
+auc:
+	python3 util/viz_auc.py
+
+time:
+	python3 util/viz_time.py
+
