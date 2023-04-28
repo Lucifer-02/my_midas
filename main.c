@@ -37,6 +37,7 @@ int main(int argc, char const *argv[]) {
   int num_depths = sizeof(depths) / sizeof(depths[0]);
   int num_factors = sizeof(factors) / sizeof(factors[0]);
 
+
   // setup time to execute measurement
   clock_t start_time, end_time;
   double total_time;
@@ -299,6 +300,7 @@ int main(int argc, char const *argv[]) {
 
     // write to file
     fprintf(fscore, "%lf\n", scores[i]);
+
   };
   fclose(fscore);
 
