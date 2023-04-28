@@ -1,2 +1,8 @@
 data/
-temp/
+output/
+.gitignore
+main
+perf.data
+out.perf
+out.folded
+
