@@ -9,7 +9,7 @@ static double ComputeScore(double a, double s, double t) {
 
 static int combine(int a, int b) { return a * 17 + b * 13; }
 
-Midas *midasInit(int total_depth, int total_width, int current_depth,
+Midas *midas_Init(int total_depth, int total_width, int current_depth,
                  int current_width) {
   Midas *midas = malloc(sizeof(Midas));
   cms_init(&(midas->total), total_width, total_depth);
@@ -19,7 +19,7 @@ Midas *midasInit(int total_depth, int total_width, int current_depth,
   return midas;
 }
 
-Midas *nitro_midasInit(int total_depth, int total_width, int current_depth,
+Midas *midas_Plus_Init(int total_depth, int total_width, int current_depth,
                        int current_width, gsl_rng *r) {
   Midas *midas = malloc(sizeof(Midas));
   ns_init(&(midas->n_total), total_width, total_depth, r);
@@ -29,7 +29,7 @@ Midas *nitro_midasInit(int total_depth, int total_width, int current_depth,
   return midas;
 }
 
-double midasOperator(Midas *midas, Input input) {
+double midas_Operator(Midas *midas, Input input) {
 
   if (input.ts > midas->current_ts) {
     cms_clear(&(midas->current));
@@ -47,7 +47,7 @@ double midasOperator(Midas *midas, Input input) {
   // return 1;
 }
 
-double nitro_midasOperator(Midas *midas, Input input, double prob) {
+double midas_Plus_Operator(Midas *midas, Input input, double prob) {
 
   if (input.ts > midas->current_ts) {
     cms_clear(&(midas->current));
@@ -65,13 +65,13 @@ double nitro_midasOperator(Midas *midas, Input input, double prob) {
   // return 1;
 }
 
-void midasFree(Midas *midas) {
+void midas_Free(Midas *midas) {
   cms_destroy(&(midas->current));
   cms_destroy(&(midas->total));
   free(midas);
 }
 
-void nitro_midasFree(Midas *midas) {
+void midas_Plus_Free(Midas *midas) {
   cms_destroy(&(midas->current));
   ns_destroy(&(midas->n_total));
   free(midas);

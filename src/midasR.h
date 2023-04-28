@@ -28,13 +28,13 @@ typedef struct {
   int current_ts;
 } MidasR;
 
-MidasR *nitro_midasRInit(int total_depth, int total_width, int current_depth,
+MidasR *midasR_Plus_Init(int total_depth, int total_width, int current_depth,
                          int current_width, double factor, gsl_rng *r);
-MidasR *midasRInit(int total_depth, int total_width, int current_depth,
+MidasR *midasR_Init(int total_depth, int total_width, int current_depth,
                    int current_width, double factor);
-double midasROperator(MidasR *midasR, Input input);
-double nitro_midasROperator(MidasR *midasR, Input input, double prob);
-void midasRFree(MidasR *midasR);
-void midasR_Nitro_Free(MidasR *midasR);
+double midasR_Operator(MidasR *midasR, Input input);
+double midasR_Plus_Operator(MidasR *midasR, Input input, double prob);
+void midasR_Free(MidasR *midasR);
+void midasR_Plus_Free(MidasR *midasR);
 
 #endif

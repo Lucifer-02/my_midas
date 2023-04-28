@@ -4,8 +4,8 @@
 
 static int combine(int a, int b) { return a * 17 + b * 13; }
 
-MidasR *midasRInit(int total_depth, int total_width, int current_depth,
-                   int current_width, double factor) {
+MidasR *midasR_Init(int total_depth, int total_width, int current_depth,
+                    int current_width, double factor) {
   MidasR *midasR = malloc(sizeof(MidasR));
   midasR->factor = factor;
 
@@ -21,7 +21,7 @@ MidasR *midasRInit(int total_depth, int total_width, int current_depth,
   return midasR;
 }
 
-MidasR *nitro_midasRInit(int total_depth, int total_width, int current_depth,
+MidasR *midasR_Plus_Init(int total_depth, int total_width, int current_depth,
                          int current_width, double factor, gsl_rng *r) {
 
   MidasR *midasR = malloc(sizeof(MidasR));
@@ -48,7 +48,7 @@ static double max(double a, double b, double c) {
   return (a > b) ? (a > c ? a : c) : (b > c ? b : c);
 }
 
-double midasROperator(MidasR *midasR, Input input) {
+double midasR_Operator(MidasR *midasR, Input input) {
 
   if (input.ts > midasR->current_ts) {
 
@@ -82,7 +82,7 @@ double midasROperator(MidasR *midasR, Input input) {
                           cms_check(&(midasR->numTotalDst), dst), input.ts));
 }
 
-double nitro_midasROperator(MidasR *midasR, Input input, double prob) {
+double midasR_Plus_Operator(MidasR *midasR, Input input, double prob) {
 
   if (input.ts > midasR->current_ts) {
 
@@ -122,7 +122,7 @@ double nitro_midasROperator(MidasR *midasR, Input input, double prob) {
 
   // return 1;
 }
-void midasRFree(MidasR *midasR) {
+void midasR_Free(MidasR *midasR) {
   cms_destroy(&(midasR->numCurrentEdge));
   cms_destroy(&(midasR->numTotalEdge));
   cms_destroy(&(midasR->numCurrentSrc));
@@ -132,7 +132,7 @@ void midasRFree(MidasR *midasR) {
   free(midasR);
 }
 
-void midasR_Nitro_Free(MidasR *midasR) {
+void midasR_Plus_Free(MidasR *midasR) {
   cms_destroy(&(midasR->numCurrentEdge));
   ns_destroy(&(midasR->ns_numTotalEdge));
   cms_destroy(&(midasR->numCurrentSrc));

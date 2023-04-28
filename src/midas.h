@@ -20,13 +20,13 @@ typedef struct {
   int current_ts;
 } Midas;
 
-Midas *midasInit(int total_depth, int total_width, int current_depth,
-                 int current_width);
-Midas *nitro_midasInit(int total_depth, int total_width, int current_depth,
+Midas *midas_Init(int total_depth, int total_width, int current_depth,
+                  int current_width);
+Midas *midas_Plus_Init(int total_depth, int total_width, int current_depth,
                        int current_width, gsl_rng *r);
-double midasOperator(Midas *midas, Input input);
-double nitro_midasOperator(Midas *midas, Input input, double prob);
-void midasFree(Midas *midas);
-void nitro_midasFree(Midas *midas);
+double midas_Operator(Midas *midas, Input input);
+double midas_Plus_Operator(Midas *midas, Input input, double prob);
+void midas_Free(Midas *midas);
+void midas_Plus_Free(Midas *midas);
 
 #endif

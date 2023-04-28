@@ -59,16 +59,16 @@ int main(int argc, char const *argv[]) {
 #if MIDAS_R
           // Original MIDAS-R
 
-          MidasR *midasR = midasRInit(depth, width, 4, 1024, factor);
+          MidasR *midasR = midasR_Init(depth, width, 4, 1024, factor);
 
-          printf("MIDAS-R Original: Depth: %d, Width: %d\n", depth, width);
+          printf("MIDAS-R: Depth: %d, Width: %d\n", depth, width);
 
           start_time = clock();
 
           for (int j = 0; j < N; j++) {
 
             Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]};
-            scores[j] = midasROperator(midasR, input);
+            scores[j] = midasR_Operator(midasR, input);
           }
 
           end_time = clock();
@@ -84,18 +84,18 @@ int main(int argc, char const *argv[]) {
           printf("\t|AUROC: %lf\n", auroc1);
 #endif
 
-          midasRFree(midasR);
+          midasR_Free(midasR);
 
 #endif
 
 //---------------------------------------------
-// Nitro MIDAS-R
-#if NITRO_MIDAS_R
+// MIDAS-R+
+#if MIDAS_R_PLUS
           gsl_rng *nr1 = gsl_rng_alloc(gsl_rng_default); // allocate a random
           gsl_rng_set(nr1, time(NULL));                  // seed the generator
 
-          MidasR *midasR_nitro =
-              nitro_midasRInit(depth, width, 4, 1024, factor, nr1);
+          MidasR *midasR_plus=
+              midasR_Plus_Init(depth, width, 4, 1024, factor, nr1);
           double prob4;
 
           printf("MIDAS-R+: Depth: %d, Width: %d\n", depth, width);
@@ -110,7 +110,7 @@ int main(int argc, char const *argv[]) {
                     0.25 * (density[j] >= 5 && density[j] < 10) +
                     0.125 * (density[j] >= 10 && density[j] < 20) +
                     0.0625 * (density[j] >= 20);
-            scores[j] = nitro_midasROperator(midasR_nitro, input, prob4);
+            scores[j] = midasR_Plus_Operator(midasR_plus, input, prob4);
           }
 
           end_time = clock();
@@ -126,7 +126,7 @@ int main(int argc, char const *argv[]) {
           printf("\t|AUROC: %lf\n", auroc2);
 #endif
 
-          midasR_Nitro_Free(midasR_nitro);
+          midasR_Plus_Free(midasR_plus);
           gsl_rng_free(nr1);
 
 #endif
@@ -135,7 +135,7 @@ int main(int argc, char const *argv[]) {
           // Original MIDAS
 #if MIDAS
 
-          Midas *midas = midasInit(depth, width, depth, width);
+          Midas *midas = midas_Init(depth, width, depth, width);
           // print error rate and confidence
           printf("MIDAS : Depth: %d, Width: %d\n", depth, width);
 
@@ -144,36 +144,36 @@ int main(int argc, char const *argv[]) {
           for (int j = 0; j < N; j++) {
 
             Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]};
-            scores[j] = midasOperator(midas, input);
+            scores[j] = midas_Operator(midas, input);
           }
 
           end_time = clock();
 
           // get total time <]
           total_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
-          printf("Total time: %lf\n", total_time);
+          printf("\t|Total time: %lf\n", total_time);
 
 #if AUC
           // compute AUROC
           double const auroc = AUROC(labels, scores, N);
-          printf("AUROC: %lf\n", auroc);
+          printf("\t|AUROC: %lf\n", auroc);
 #endif
 
-          midasFree(midas);
+          midas_Free(midas);
 
 #endif
 //---------------------------------------------
-// Nitro MIDAS
-#if NITRO_MIDAS
+// MIDAS+
+#if MIDAS_PLUS
 
           gsl_rng *nr = gsl_rng_alloc(gsl_rng_default); // allocate a random
           gsl_rng_set(nr, time(NULL));                  // seed the generator
 
-          Midas *midas_nitro = nitro_midasInit(depth, width, depth, width, nr);
+          Midas *midas_plus= midas_Plus_Init(depth, width, depth, width, nr);
           double prob8 = 1;
 
           // print error rate and confidence
-          printf("Nitro MIDAS: depth: %d, width: %d\n", depth, width);
+          printf("MIDAS+: depth: %d, width: %d\n", depth, width);
 
           start_time = clock();
 
@@ -187,35 +187,34 @@ int main(int argc, char const *argv[]) {
                     0.125 * (density[j] >= 10 && density[j] < 20) +
                     0.0625 * (density[j] >= 20);
 
-            scores[j] = nitro_midasOperator(midas_nitro, input, prob8);
+            scores[j] = midas_Plus_Operator(midas_plus, input, prob8);
           }
 
           end_time = clock();
 
           // get total time
           total_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
-          printf("total time: %lf\n", total_time);
+          printf("\t|total time: %lf\n", total_time);
 
 #if AUC
           // compute auroc
           double const auroc4 = AUROC(labels, scores, N);
-          printf("AUROC: %lf\n", auroc4);
+          printf("\t|AUROC: %lf\n", auroc4);
 #endif
           gsl_rng_free(nr); // free the generator
-          nitro_midasFree(midas_nitro);
+          midas_Plus_Free(midas_plus);
 
 #endif
 
           //---------------------------------------------
           //
 #else
-#if NITRO_MIDAS
-          // Nitro MIDAS
-
+#if MIDAS_PLUS
+          // MIDAS+
           gsl_rng *nr = gsl_rng_alloc(gsl_rng_default); // allocate a random
           gsl_rng_set(nr, time(NULL));                  // seed the generator
 
-          Midas *midas_nitro = nitro_midasInit(depth, width, depth, width, nr);
+          Midas *midas_plus= midas_Plus_Init(depth, width, depth, width, nr);
           double prob = 1;
 
           for (int j = 0; j < N; j++) {
@@ -234,7 +233,7 @@ int main(int argc, char const *argv[]) {
                    0.25 * (density[j] >= 5 && density[j] < 20) +
                    0.125 * (density[j] >= 20);
 
-            scores[j] = nitro_midasOperator(midas_nitro, input, prob);
+            scores[j] = midas_Plus_Operator(midas_plus, input, prob);
           }
 #endif
 
@@ -242,12 +241,12 @@ int main(int argc, char const *argv[]) {
 #if MIDAS
           // Original MIDAS
 
-          Midas *midas = midasInit(depth, width, depth, width);
+          Midas *midas = midas_Init(depth, width, depth, width);
 
           for (int j = 0; j < N; j++) {
 
             Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]};
-            scores[j] = midasOperator(midas, input);
+            scores[j] = midas_Operator(midas, input);
           }
 #endif
 
@@ -255,26 +254,26 @@ int main(int argc, char const *argv[]) {
 // Original MIDAS-R
 #if MIDAS_R
 
-          MidasR *midasR = midasRInit(depth, width, depth, width, 0.5);
+          MidasR *midasR = midasR_Init(depth, width, depth, width, 0.5);
 
           for (int j = 0; j < N; j++) {
 
             Input const input = {.src = src[j], .dst = dst[j], .ts = ts[j]};
-            scores[j] = midasROperator(midasR, input);
+            scores[j] = midasR_Operator(midasR, input);
           }
 
 #endif
 
 //---------------------------------------------
-// Nitro MIDAS-R
-#if NITRO_MIDAS_R
+// MIDAS-R+
+#if MIDAS_R_PLUS
 
           gsl_rng *nr1 = gsl_rng_alloc(gsl_rng_default); // allocate a random
           gsl_rng_set(nr1, time(NULL));                  // seed the generator
           double prob1 = 1;
 
-          MidasR *midasR_nitro =
-              nitro_midasRInit(depth, width, depth, width, 0.5, nr1);
+          MidasR *midasR_plus=
+              midasR_Plus_Init(depth, width, depth, width, 0.5, nr1);
 
           for (int j = 0; j < N; j++) {
 
@@ -282,7 +281,7 @@ int main(int argc, char const *argv[]) {
             prob1 = 1.0 * (density[j] < 5) +
                     0.25 * (density[j] >= 5 && density[j] < 20) +
                     0.125 * (density[j] >= 20);
-            scores[j] = nitro_midasROperator(midasR_nitro, input, prob1);
+            scores[j] = midasR_Plus_Operator(midasR_plus, input, prob1);
           }
 #endif
 #endif
@@ -291,7 +290,7 @@ int main(int argc, char const *argv[]) {
     }
   }
 
-  FILE *fscore = fopen("temp/Score.txt", "w");
+  FILE *fscore = fopen("output/Score.txt", "w");
   if (fscore == NULL) {
     printf("Error opening file!\n");
     exit(1);
