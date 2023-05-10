@@ -119,8 +119,6 @@ double midasR_Plus_Operator(MidasR *midasR, Input input, double prob) {
       ComputeScore(cms_check_fast(&(midasR->numCurrentDst)),
                    ns_check_median_fast(&(midasR->ns_numTotalDst), dst),
                    input.ts));
-
-  // return 1;
 }
 void midasR_Free(MidasR *midasR) {
   cms_destroy(&(midasR->numCurrentEdge));

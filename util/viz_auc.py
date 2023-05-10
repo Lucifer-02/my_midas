@@ -38,6 +38,6 @@ ax.bar_label(ax.containers[0], fmt='%.4f')
 ax.bar_label(ax.containers[1], fmt='%.4f')
 
 # save plot 
-# plt.savefig('viz_auc.png', dpi=300)
+plt.savefig('viz_auc.png', dpi=300)
 plt.show()
 
