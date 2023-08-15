@@ -12,7 +12,7 @@ Tìm cách nâng cao hiệu năng trong khi vẫn đảm bảo độ chính xác
 
 ## Kết quả
 
-<img src="viz_auc.png" width="600" height="300">
-<img src="viz_score.png" width="600" height="300">
-<img src="viz_time.png" width="600" height="300">
+<img src="viz_auc.png" width="600" height="600">
+<img src="viz_score.png" width="600" height="550">
+<img src="viz_time.png" width="600" height="550">
 
