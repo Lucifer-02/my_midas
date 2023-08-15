@@ -12,8 +12,7 @@ Tìm cách nâng cao hiệu năng trong khi vẫn đảm bảo độ chính xác
 
 ## Kết quả
 
-<figure>
-    <img src="viz_auc.png"
-         alt="">
-    <figcaption>AUC scores</figcaption>
-</figure>
+<img src="viz_auc.png" width="200" height="100">
+<img src="viz_roc.png" width="200" height="100">
+<img src="viz_time.png" width="200" height="100">
+
