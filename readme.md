@@ -1,6 +1,6 @@
 # Cải thiện hiệu năng thuật toán phát hiện bất thường MIDAS-R trong an ninh mạng
 
-<img src="new_midasr.png" width="300" height="120">
+<img src="new_midasr.png" width="600" height="220">
 
 Tìm cách nâng cao hiệu năng trong khi vẫn đảm bảo độ chính xác của thuật toán [MIDAS](https://github.com/Stream-AD/MIDAS) bằng các áp dụng các kỹ thuật và nghiên cứu sau:
 1. [NitroSketch](https://dl.acm.org/doi/10.1145/3341302.3342076): khung nhằm giải quyết một cách có hệ thống các tắc nghẽn về hiệu năng của các bản phác thảo.
@@ -12,7 +12,7 @@ Tìm cách nâng cao hiệu năng trong khi vẫn đảm bảo độ chính xác
 7. Branchless Programming: kỹ thuật lập trình giảm thiểu rẽ nhánh trong chương trình.
 
 
-<img src="tonghop.png" width="400" height="200">
+<img src="tonghop.png" width="600" height="300">
 
 ## Kết quả
 
